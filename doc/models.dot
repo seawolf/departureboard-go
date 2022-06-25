@@ -1,0 +1,9 @@
+digraph DepartureBoard {
+  TOC -> Service
+  Station -> Service
+  Station -> Platform
+  Day -> Service
+
+  Service -> CallingPoint
+  Platform -> CallingPoint
+}
