@@ -107,7 +107,7 @@
                         {{ range .Days }}
                             <tr>
                                 <td>{{ .ID }}</td>
-                                <td>{{ .Date }}</td>
+                                <td>{{ .Date | formatAsDate }}</td>
                             </tr>
                         {{ end }}
                     </tbody>
@@ -138,8 +138,8 @@
                                 <td>{{ .ID }}</td>
                                 <td>{{ .Edges.Platform.Edges.Station.Name }}</td>
                                 <td>{{ .Edges.Platform.Name }}</td>
-                                <td>{{ .ArrivalTime }}</td>
-                                <td>{{ .DepartureTime }}</td>
+                                <td>{{ .ArrivalTime | formatAsTime }}</td>
+                                <td>{{ .DepartureTime | formatAsTime }}</td>
                             </tr>
                         {{ end }}
                     </tbody>
@@ -168,10 +168,10 @@
                         {{ range .Services }}
                             <tr>
                                 <td>{{ .ID }}</td>
-                                <td>{{ .TOC.Name }}</td>
+                                <td>{{ .Edges.TOC.Name }}</td>
                                 <td>{{ .Uid }}</td>
                                 <td>{{ .Headcode }}</td>
-                                <td>{{ .Day.Date }}</td>
+                                <td>{{ .Edges.Day.Date }}</td>
                             </tr>
                         {{ end }}
                     </tbody>
