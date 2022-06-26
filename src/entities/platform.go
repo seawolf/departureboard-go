@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -17,6 +18,33 @@ type Platform struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the PlatformQuery when eager-loading is set.
+	Edges             PlatformEdges `json:"edges"`
+	station_platforms *int
+}
+
+// PlatformEdges holds the relations/edges for other nodes in the graph.
+type PlatformEdges struct {
+	// Station holds the value of the station edge.
+	Station *Station `json:"station,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// StationOrErr returns the Station value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PlatformEdges) StationOrErr() (*Station, error) {
+	if e.loadedTypes[0] {
+		if e.Station == nil {
+			// The edge station was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: station.Label}
+		}
+		return e.Station, nil
+	}
+	return nil, &NotLoadedError{edge: "station"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -28,6 +56,8 @@ func (*Platform) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case platform.FieldName:
 			values[i] = new(sql.NullString)
+		case platform.ForeignKeys[0]: // station_platforms
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Platform", columns[i])
 		}
@@ -55,9 +85,21 @@ func (pl *Platform) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				pl.Name = value.String
 			}
+		case platform.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field station_platforms", value)
+			} else if value.Valid {
+				pl.station_platforms = new(int)
+				*pl.station_platforms = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryStation queries the "station" edge of the Platform entity.
+func (pl *Platform) QueryStation() *StationQuery {
+	return (&PlatformClient{config: pl.config}).QueryStation(pl)
 }
 
 // Update returns a builder for updating this Platform.

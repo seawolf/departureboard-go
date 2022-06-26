@@ -4,10 +4,12 @@ package entities
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
 	"entgo.io/ent/dialect/sql"
@@ -24,6 +26,8 @@ type StationQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Station
+	// eager-loading edges.
+	withPlatforms *PlatformQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (sq *StationQuery) Unique(unique bool) *StationQuery {
 func (sq *StationQuery) Order(o ...OrderFunc) *StationQuery {
 	sq.order = append(sq.order, o...)
 	return sq
+}
+
+// QueryPlatforms chains the current query on the "platforms" edge.
+func (sq *StationQuery) QueryPlatforms() *PlatformQuery {
+	query := &PlatformQuery{config: sq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(station.Table, station.FieldID, selector),
+			sqlgraph.To(platform.Table, platform.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, station.PlatformsTable, station.PlatformsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Station entity from the query.
@@ -236,16 +262,28 @@ func (sq *StationQuery) Clone() *StationQuery {
 		return nil
 	}
 	return &StationQuery{
-		config:     sq.config,
-		limit:      sq.limit,
-		offset:     sq.offset,
-		order:      append([]OrderFunc{}, sq.order...),
-		predicates: append([]predicate.Station{}, sq.predicates...),
+		config:        sq.config,
+		limit:         sq.limit,
+		offset:        sq.offset,
+		order:         append([]OrderFunc{}, sq.order...),
+		predicates:    append([]predicate.Station{}, sq.predicates...),
+		withPlatforms: sq.withPlatforms.Clone(),
 		// clone intermediate query.
 		sql:    sq.sql.Clone(),
 		path:   sq.path,
 		unique: sq.unique,
 	}
+}
+
+// WithPlatforms tells the query-builder to eager-load the nodes that are connected to
+// the "platforms" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *StationQuery) WithPlatforms(opts ...func(*PlatformQuery)) *StationQuery {
+	query := &PlatformQuery{config: sq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withPlatforms = query
+	return sq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,8 +349,11 @@ func (sq *StationQuery) prepareQuery(ctx context.Context) error {
 
 func (sq *StationQuery) sqlAll(ctx context.Context) ([]*Station, error) {
 	var (
-		nodes = []*Station{}
-		_spec = sq.querySpec()
+		nodes       = []*Station{}
+		_spec       = sq.querySpec()
+		loadedTypes = [1]bool{
+			sq.withPlatforms != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Station{config: sq.config}
@@ -324,6 +365,7 @@ func (sq *StationQuery) sqlAll(ctx context.Context) ([]*Station, error) {
 			return fmt.Errorf("entities: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, sq.driver, _spec); err != nil {
@@ -332,6 +374,36 @@ func (sq *StationQuery) sqlAll(ctx context.Context) ([]*Station, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := sq.withPlatforms; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Station)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Platforms = []*Platform{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Platform(func(s *sql.Selector) {
+			s.Where(sql.InValues(station.PlatformsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.station_platforms
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "station_platforms" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "station_platforms" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Platforms = append(node.Edges.Platforms, n)
+		}
+	}
+
 	return nodes, nil
 }
 

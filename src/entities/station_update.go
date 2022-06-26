@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
 	"entgo.io/ent/dialect/sql"
@@ -55,9 +56,45 @@ func (su *StationUpdate) SetNillableCrs(s *string) *StationUpdate {
 	return su
 }
 
+// AddPlatformIDs adds the "platforms" edge to the Platform entity by IDs.
+func (su *StationUpdate) AddPlatformIDs(ids ...int) *StationUpdate {
+	su.mutation.AddPlatformIDs(ids...)
+	return su
+}
+
+// AddPlatforms adds the "platforms" edges to the Platform entity.
+func (su *StationUpdate) AddPlatforms(p ...*Platform) *StationUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return su.AddPlatformIDs(ids...)
+}
+
 // Mutation returns the StationMutation object of the builder.
 func (su *StationUpdate) Mutation() *StationMutation {
 	return su.mutation
+}
+
+// ClearPlatforms clears all "platforms" edges to the Platform entity.
+func (su *StationUpdate) ClearPlatforms() *StationUpdate {
+	su.mutation.ClearPlatforms()
+	return su
+}
+
+// RemovePlatformIDs removes the "platforms" edge to Platform entities by IDs.
+func (su *StationUpdate) RemovePlatformIDs(ids ...int) *StationUpdate {
+	su.mutation.RemovePlatformIDs(ids...)
+	return su
+}
+
+// RemovePlatforms removes "platforms" edges to Platform entities.
+func (su *StationUpdate) RemovePlatforms(p ...*Platform) *StationUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return su.RemovePlatformIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -146,6 +183,60 @@ func (su *StationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: station.FieldCrs,
 		})
 	}
+	if su.mutation.PlatformsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   station.PlatformsTable,
+			Columns: []string{station.PlatformsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RemovedPlatformsIDs(); len(nodes) > 0 && !su.mutation.PlatformsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   station.PlatformsTable,
+			Columns: []string{station.PlatformsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.PlatformsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   station.PlatformsTable,
+			Columns: []string{station.PlatformsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{station.Label}
@@ -193,9 +284,45 @@ func (suo *StationUpdateOne) SetNillableCrs(s *string) *StationUpdateOne {
 	return suo
 }
 
+// AddPlatformIDs adds the "platforms" edge to the Platform entity by IDs.
+func (suo *StationUpdateOne) AddPlatformIDs(ids ...int) *StationUpdateOne {
+	suo.mutation.AddPlatformIDs(ids...)
+	return suo
+}
+
+// AddPlatforms adds the "platforms" edges to the Platform entity.
+func (suo *StationUpdateOne) AddPlatforms(p ...*Platform) *StationUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return suo.AddPlatformIDs(ids...)
+}
+
 // Mutation returns the StationMutation object of the builder.
 func (suo *StationUpdateOne) Mutation() *StationMutation {
 	return suo.mutation
+}
+
+// ClearPlatforms clears all "platforms" edges to the Platform entity.
+func (suo *StationUpdateOne) ClearPlatforms() *StationUpdateOne {
+	suo.mutation.ClearPlatforms()
+	return suo
+}
+
+// RemovePlatformIDs removes the "platforms" edge to Platform entities by IDs.
+func (suo *StationUpdateOne) RemovePlatformIDs(ids ...int) *StationUpdateOne {
+	suo.mutation.RemovePlatformIDs(ids...)
+	return suo
+}
+
+// RemovePlatforms removes "platforms" edges to Platform entities.
+func (suo *StationUpdateOne) RemovePlatforms(p ...*Platform) *StationUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return suo.RemovePlatformIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -307,6 +434,60 @@ func (suo *StationUpdateOne) sqlSave(ctx context.Context) (_node *Station, err e
 			Value:  value,
 			Column: station.FieldCrs,
 		})
+	}
+	if suo.mutation.PlatformsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   station.PlatformsTable,
+			Columns: []string{station.PlatformsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RemovedPlatformsIDs(); len(nodes) > 0 && !suo.mutation.PlatformsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   station.PlatformsTable,
+			Columns: []string{station.PlatformsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.PlatformsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   station.PlatformsTable,
+			Columns: []string{station.PlatformsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Station{config: suo.config}
 	_spec.Assign = _node.assignValues

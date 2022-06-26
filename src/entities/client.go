@@ -18,6 +18,7 @@ import (
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -422,6 +423,22 @@ func (c *PlatformClient) GetX(ctx context.Context, id int) *Platform {
 	return obj
 }
 
+// QueryStation queries the station edge of a Platform.
+func (c *PlatformClient) QueryStation(pl *Platform) *StationQuery {
+	query := &StationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(platform.Table, platform.FieldID, id),
+			sqlgraph.To(station.Table, station.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, platform.StationTable, platform.StationColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *PlatformClient) Hooks() []Hook {
 	return c.hooks.Platform
@@ -600,6 +617,22 @@ func (c *StationClient) GetX(ctx context.Context, id int) *Station {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryPlatforms queries the platforms edge of a Station.
+func (c *StationClient) QueryPlatforms(s *Station) *PlatformQuery {
+	query := &PlatformQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(station.Table, station.FieldID, id),
+			sqlgraph.To(platform.Table, platform.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, station.PlatformsTable, station.PlatformsColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

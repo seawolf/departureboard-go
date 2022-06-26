@@ -35,12 +35,21 @@ var (
 	PlatformsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Default: "-"},
+		{Name: "station_platforms", Type: field.TypeInt, Nullable: true},
 	}
 	// PlatformsTable holds the schema information for the "platforms" table.
 	PlatformsTable = &schema.Table{
 		Name:       "platforms",
 		Columns:    PlatformsColumns,
 		PrimaryKey: []*schema.Column{PlatformsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "platforms_stations_platforms",
+				Columns:    []*schema.Column{PlatformsColumns[2]},
+				RefColumns: []*schema.Column{StationsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// ServicesColumns holds the columns for the "services" table.
 	ServicesColumns = []*schema.Column{
@@ -89,4 +98,5 @@ var (
 )
 
 func init() {
+	PlatformsTable.ForeignKeys[0].RefTable = StationsTable
 }

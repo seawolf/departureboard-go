@@ -11,8 +11,17 @@ const (
 	FieldName = "name"
 	// FieldCrs holds the string denoting the crs field in the database.
 	FieldCrs = "crs"
+	// EdgePlatforms holds the string denoting the platforms edge name in mutations.
+	EdgePlatforms = "platforms"
 	// Table holds the table name of the station in the database.
 	Table = "stations"
+	// PlatformsTable is the table that holds the platforms relation/edge.
+	PlatformsTable = "platforms"
+	// PlatformsInverseTable is the table name for the Platform entity.
+	// It exists in this package in order to avoid circular dependency with the "platform" package.
+	PlatformsInverseTable = "platforms"
+	// PlatformsColumn is the table column denoting the platforms relation/edge.
+	PlatformsColumn = "station_platforms"
 )
 
 // Columns holds all SQL columns for station fields.

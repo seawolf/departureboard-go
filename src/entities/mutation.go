@@ -716,14 +716,16 @@ func (m *DayMutation) ResetEdge(name string) error {
 // PlatformMutation represents an operation that mutates the Platform nodes in the graph.
 type PlatformMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Platform, error)
-	predicates    []predicate.Platform
+	op             Op
+	typ            string
+	id             *int
+	name           *string
+	clearedFields  map[string]struct{}
+	station        *int
+	clearedstation bool
+	done           bool
+	oldValue       func(context.Context) (*Platform, error)
+	predicates     []predicate.Platform
 }
 
 var _ ent.Mutation = (*PlatformMutation)(nil)
@@ -860,6 +862,45 @@ func (m *PlatformMutation) ResetName() {
 	m.name = nil
 }
 
+// SetStationID sets the "station" edge to the Station entity by id.
+func (m *PlatformMutation) SetStationID(id int) {
+	m.station = &id
+}
+
+// ClearStation clears the "station" edge to the Station entity.
+func (m *PlatformMutation) ClearStation() {
+	m.clearedstation = true
+}
+
+// StationCleared reports if the "station" edge to the Station entity was cleared.
+func (m *PlatformMutation) StationCleared() bool {
+	return m.clearedstation
+}
+
+// StationID returns the "station" edge ID in the mutation.
+func (m *PlatformMutation) StationID() (id int, exists bool) {
+	if m.station != nil {
+		return *m.station, true
+	}
+	return
+}
+
+// StationIDs returns the "station" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// StationID instead. It exists only for internal usage by the builders.
+func (m *PlatformMutation) StationIDs() (ids []int) {
+	if id := m.station; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetStation resets all changes to the "station" edge.
+func (m *PlatformMutation) ResetStation() {
+	m.station = nil
+	m.clearedstation = false
+}
+
 // Where appends a list predicates to the PlatformMutation builder.
 func (m *PlatformMutation) Where(ps ...predicate.Platform) {
 	m.predicates = append(m.predicates, ps...)
@@ -978,49 +1019,77 @@ func (m *PlatformMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PlatformMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.station != nil {
+		edges = append(edges, platform.EdgeStation)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *PlatformMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case platform.EdgeStation:
+		if id := m.station; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PlatformMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *PlatformMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PlatformMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedstation {
+		edges = append(edges, platform.EdgeStation)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *PlatformMutation) EdgeCleared(name string) bool {
+	switch name {
+	case platform.EdgeStation:
+		return m.clearedstation
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *PlatformMutation) ClearEdge(name string) error {
+	switch name {
+	case platform.EdgeStation:
+		m.ClearStation()
+		return nil
+	}
 	return fmt.Errorf("unknown Platform unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *PlatformMutation) ResetEdge(name string) error {
+	switch name {
+	case platform.EdgeStation:
+		m.ResetStation()
+		return nil
+	}
 	return fmt.Errorf("unknown Platform edge %s", name)
 }
 
@@ -1392,15 +1461,18 @@ func (m *ServiceMutation) ResetEdge(name string) error {
 // StationMutation represents an operation that mutates the Station nodes in the graph.
 type StationMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	crs           *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Station, error)
-	predicates    []predicate.Station
+	op               Op
+	typ              string
+	id               *int
+	name             *string
+	crs              *string
+	clearedFields    map[string]struct{}
+	platforms        map[int]struct{}
+	removedplatforms map[int]struct{}
+	clearedplatforms bool
+	done             bool
+	oldValue         func(context.Context) (*Station, error)
+	predicates       []predicate.Station
 }
 
 var _ ent.Mutation = (*StationMutation)(nil)
@@ -1573,6 +1645,60 @@ func (m *StationMutation) ResetCrs() {
 	m.crs = nil
 }
 
+// AddPlatformIDs adds the "platforms" edge to the Platform entity by ids.
+func (m *StationMutation) AddPlatformIDs(ids ...int) {
+	if m.platforms == nil {
+		m.platforms = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.platforms[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPlatforms clears the "platforms" edge to the Platform entity.
+func (m *StationMutation) ClearPlatforms() {
+	m.clearedplatforms = true
+}
+
+// PlatformsCleared reports if the "platforms" edge to the Platform entity was cleared.
+func (m *StationMutation) PlatformsCleared() bool {
+	return m.clearedplatforms
+}
+
+// RemovePlatformIDs removes the "platforms" edge to the Platform entity by IDs.
+func (m *StationMutation) RemovePlatformIDs(ids ...int) {
+	if m.removedplatforms == nil {
+		m.removedplatforms = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.platforms, ids[i])
+		m.removedplatforms[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPlatforms returns the removed IDs of the "platforms" edge to the Platform entity.
+func (m *StationMutation) RemovedPlatformsIDs() (ids []int) {
+	for id := range m.removedplatforms {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PlatformsIDs returns the "platforms" edge IDs in the mutation.
+func (m *StationMutation) PlatformsIDs() (ids []int) {
+	for id := range m.platforms {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPlatforms resets all changes to the "platforms" edge.
+func (m *StationMutation) ResetPlatforms() {
+	m.platforms = nil
+	m.clearedplatforms = false
+	m.removedplatforms = nil
+}
+
 // Where appends a list predicates to the StationMutation builder.
 func (m *StationMutation) Where(ps ...predicate.Station) {
 	m.predicates = append(m.predicates, ps...)
@@ -1708,49 +1834,85 @@ func (m *StationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *StationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.platforms != nil {
+		edges = append(edges, station.EdgePlatforms)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *StationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case station.EdgePlatforms:
+		ids := make([]ent.Value, 0, len(m.platforms))
+		for id := range m.platforms {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *StationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedplatforms != nil {
+		edges = append(edges, station.EdgePlatforms)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *StationMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case station.EdgePlatforms:
+		ids := make([]ent.Value, 0, len(m.removedplatforms))
+		for id := range m.removedplatforms {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *StationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedplatforms {
+		edges = append(edges, station.EdgePlatforms)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *StationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case station.EdgePlatforms:
+		return m.clearedplatforms
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *StationMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Station unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *StationMutation) ResetEdge(name string) error {
+	switch name {
+	case station.EdgePlatforms:
+		m.ResetPlatforms()
+		return nil
+	}
 	return fmt.Errorf("unknown Station edge %s", name)
 }
 

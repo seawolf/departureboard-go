@@ -19,6 +19,27 @@ type Station struct {
 	Name string `json:"name,omitempty"`
 	// Crs holds the value of the "crs" field.
 	Crs string `json:"crs,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the StationQuery when eager-loading is set.
+	Edges StationEdges `json:"edges"`
+}
+
+// StationEdges holds the relations/edges for other nodes in the graph.
+type StationEdges struct {
+	// Platforms holds the value of the platforms edge.
+	Platforms []*Platform `json:"platforms,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// PlatformsOrErr returns the Platforms value or an error if the edge
+// was not loaded in eager-loading.
+func (e StationEdges) PlatformsOrErr() ([]*Platform, error) {
+	if e.loadedTypes[0] {
+		return e.Platforms, nil
+	}
+	return nil, &NotLoadedError{edge: "platforms"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -66,6 +87,11 @@ func (s *Station) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryPlatforms queries the "platforms" edge of the Station entity.
+func (s *Station) QueryPlatforms() *PlatformQuery {
+	return (&StationClient{config: s.config}).QueryPlatforms(s)
 }
 
 // Update returns a builder for updating this Station.

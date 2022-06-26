@@ -9,8 +9,17 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// EdgeStation holds the string denoting the station edge name in mutations.
+	EdgeStation = "station"
 	// Table holds the table name of the platform in the database.
 	Table = "platforms"
+	// StationTable is the table that holds the station relation/edge.
+	StationTable = "platforms"
+	// StationInverseTable is the table name for the Station entity.
+	// It exists in this package in order to avoid circular dependency with the "station" package.
+	StationInverseTable = "stations"
+	// StationColumn is the table column denoting the station relation/edge.
+	StationColumn = "station_platforms"
 )
 
 // Columns holds all SQL columns for platform fields.
@@ -19,10 +28,21 @@ var Columns = []string{
 	FieldName,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "platforms"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"station_platforms",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

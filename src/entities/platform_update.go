@@ -9,6 +9,7 @@ import (
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -41,9 +42,34 @@ func (pu *PlatformUpdate) SetNillableName(s *string) *PlatformUpdate {
 	return pu
 }
 
+// SetStationID sets the "station" edge to the Station entity by ID.
+func (pu *PlatformUpdate) SetStationID(id int) *PlatformUpdate {
+	pu.mutation.SetStationID(id)
+	return pu
+}
+
+// SetNillableStationID sets the "station" edge to the Station entity by ID if the given value is not nil.
+func (pu *PlatformUpdate) SetNillableStationID(id *int) *PlatformUpdate {
+	if id != nil {
+		pu = pu.SetStationID(*id)
+	}
+	return pu
+}
+
+// SetStation sets the "station" edge to the Station entity.
+func (pu *PlatformUpdate) SetStation(s *Station) *PlatformUpdate {
+	return pu.SetStationID(s.ID)
+}
+
 // Mutation returns the PlatformMutation object of the builder.
 func (pu *PlatformUpdate) Mutation() *PlatformMutation {
 	return pu.mutation
+}
+
+// ClearStation clears the "station" edge to the Station entity.
+func (pu *PlatformUpdate) ClearStation() *PlatformUpdate {
+	pu.mutation.ClearStation()
+	return pu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -125,6 +151,41 @@ func (pu *PlatformUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: platform.FieldName,
 		})
 	}
+	if pu.mutation.StationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   platform.StationTable,
+			Columns: []string{platform.StationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: station.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.StationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   platform.StationTable,
+			Columns: []string{platform.StationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: station.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{platform.Label}
@@ -158,9 +219,34 @@ func (puo *PlatformUpdateOne) SetNillableName(s *string) *PlatformUpdateOne {
 	return puo
 }
 
+// SetStationID sets the "station" edge to the Station entity by ID.
+func (puo *PlatformUpdateOne) SetStationID(id int) *PlatformUpdateOne {
+	puo.mutation.SetStationID(id)
+	return puo
+}
+
+// SetNillableStationID sets the "station" edge to the Station entity by ID if the given value is not nil.
+func (puo *PlatformUpdateOne) SetNillableStationID(id *int) *PlatformUpdateOne {
+	if id != nil {
+		puo = puo.SetStationID(*id)
+	}
+	return puo
+}
+
+// SetStation sets the "station" edge to the Station entity.
+func (puo *PlatformUpdateOne) SetStation(s *Station) *PlatformUpdateOne {
+	return puo.SetStationID(s.ID)
+}
+
 // Mutation returns the PlatformMutation object of the builder.
 func (puo *PlatformUpdateOne) Mutation() *PlatformMutation {
 	return puo.mutation
+}
+
+// ClearStation clears the "station" edge to the Station entity.
+func (puo *PlatformUpdateOne) ClearStation() *PlatformUpdateOne {
+	puo.mutation.ClearStation()
+	return puo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -265,6 +351,41 @@ func (puo *PlatformUpdateOne) sqlSave(ctx context.Context) (_node *Platform, err
 			Value:  value,
 			Column: platform.FieldName,
 		})
+	}
+	if puo.mutation.StationCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   platform.StationTable,
+			Columns: []string{platform.StationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: station.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.StationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   platform.StationTable,
+			Columns: []string{platform.StationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: station.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Platform{config: puo.config}
 	_spec.Assign = _node.assignValues

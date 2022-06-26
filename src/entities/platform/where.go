@@ -5,6 +5,7 @@ package platform
 import (
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -205,6 +206,34 @@ func NameEqualFold(v string) predicate.Platform {
 func NameContainsFold(v string) predicate.Platform {
 	return predicate.Platform(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldName), v))
+	})
+}
+
+// HasStation applies the HasEdge predicate on the "station" edge.
+func HasStation() predicate.Platform {
+	return predicate.Platform(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(StationTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, StationTable, StationColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasStationWith applies the HasEdge predicate on the "station" edge with a given conditions (other predicates).
+func HasStationWith(preds ...predicate.Station) predicate.Platform {
+	return predicate.Platform(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(StationInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, StationTable, StationColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

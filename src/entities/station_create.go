@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -45,6 +46,21 @@ func (sc *StationCreate) SetNillableCrs(s *string) *StationCreate {
 		sc.SetCrs(*s)
 	}
 	return sc
+}
+
+// AddPlatformIDs adds the "platforms" edge to the Platform entity by IDs.
+func (sc *StationCreate) AddPlatformIDs(ids ...int) *StationCreate {
+	sc.mutation.AddPlatformIDs(ids...)
+	return sc
+}
+
+// AddPlatforms adds the "platforms" edges to the Platform entity.
+func (sc *StationCreate) AddPlatforms(p ...*Platform) *StationCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return sc.AddPlatformIDs(ids...)
 }
 
 // Mutation returns the StationMutation object of the builder.
@@ -178,6 +194,25 @@ func (sc *StationCreate) createSpec() (*Station, *sqlgraph.CreateSpec) {
 			Column: station.FieldCrs,
 		})
 		_node.Crs = value
+	}
+	if nodes := sc.mutation.PlatformsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   station.PlatformsTable,
+			Columns: []string{station.PlatformsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
