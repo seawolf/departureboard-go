@@ -57,13 +57,13 @@ func createTOCs(ctx context.Context, client *entities.Client) {
 	client.TOC.
 		Create().
 		SetName("South Western Railway").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	client.TOC.
 		Create().
 		SetName("Southern").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	log.Println("TOCs created:", count)
@@ -89,42 +89,42 @@ func createStations(ctx context.Context, client *entities.Client) {
 		Create().
 		SetName("Portsmouth Harbour").
 		SetCrs("PMH").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	client.Station.
 		Create().
 		SetName("Portsmouth & Southsea").
 		SetCrs("PMS").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	client.Station.
 		Create().
 		SetName("Fratton").
 		SetCrs("FTN").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	client.Station.
 		Create().
 		SetName("Hilsea").
 		SetCrs("HLS").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	client.Station.
 		Create().
 		SetName("Bedhampton").
 		SetCrs("BDH").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	client.Station.
 		Create().
 		SetName("Havant").
 		SetCrs("HAV").
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	log.Println("Stations created:", count)
@@ -155,7 +155,7 @@ func createPlatforms(ctx context.Context, client *entities.Client) {
 			Create().
 			SetStation(stationPMH).
 			SetName(platform).
-			Save(ctx)
+			SaveX(ctx)
 		count++
 	}
 
@@ -168,7 +168,7 @@ func createPlatforms(ctx context.Context, client *entities.Client) {
 			Create().
 			SetStation(stationPMS).
 			SetName(platform).
-			Save(ctx)
+			SaveX(ctx)
 		count++
 	}
 
@@ -181,7 +181,7 @@ func createPlatforms(ctx context.Context, client *entities.Client) {
 			Create().
 			SetStation(stationFTN).
 			SetName(platform).
-			Save(ctx)
+			SaveX(ctx)
 		count++
 	}
 
@@ -194,7 +194,7 @@ func createPlatforms(ctx context.Context, client *entities.Client) {
 			Create().
 			SetStation(stationHLS).
 			SetName(platform).
-			Save(ctx)
+			SaveX(ctx)
 		count++
 	}
 
@@ -207,7 +207,7 @@ func createPlatforms(ctx context.Context, client *entities.Client) {
 			Create().
 			SetStation(stationBDH).
 			SetName(platform).
-			Save(ctx)
+			SaveX(ctx)
 		count++
 	}
 
@@ -220,7 +220,7 @@ func createPlatforms(ctx context.Context, client *entities.Client) {
 			Create().
 			SetStation(stationHAV).
 			SetName(platform).
-			Save(ctx)
+			SaveX(ctx)
 		count++
 	}
 
@@ -253,7 +253,7 @@ func createDays(ctx context.Context, client *entities.Client) {
 		client.Day.
 			Create().
 			SetDate(newDay).
-			Save(ctx)
+			SaveX(ctx)
 		count++
 	}
 
@@ -329,28 +329,28 @@ func createCallingPoints(ctx context.Context, client *entities.Client) {
 		SetPlatform(PMH_4).
 		SetArrivalTime(time.Time{}).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 15)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(PMS_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 18)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 20)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(FTN_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 23)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 24)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(HAV_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 32)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 34)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	// 2P98
@@ -359,42 +359,42 @@ func createCallingPoints(ctx context.Context, client *entities.Client) {
 		SetPlatform(PMH_3).
 		SetArrivalTime(time.Time{}).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 19)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(PMS_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 22)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 24)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(FTN_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 27)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 28)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(HLS_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 32)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 32)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(BDH_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 37)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 37)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 	client.CallingPoint.
 		Create().
 		SetPlatform(HAV_1).
 		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 39)).
 		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 40)).
-		Save(ctx)
+		SaveX(ctx)
 	count++
 
 	log.Println("CallingPoints created:", count)
