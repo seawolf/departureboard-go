@@ -1,0 +1,183 @@
+{{ template "header.tmpl" . }}
+
+<div class="row">
+    <h1>All Data</h1>
+</div>
+
+<div class="row">
+    <ul class="collapsible">
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">business</i>
+                TOCs
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {{ range .TOCs }}
+                            <tr>
+                                <td>{{ .ID }}</td>
+                                <td>{{ .Name }}</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">place</i>
+                Stations
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>CRS</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {{ range .Stations }}
+                            <tr>
+                                <td>{{ .ID }}</td>
+                                <td>{{ .Name }}</td>
+                                <td>{{ .Crs }}</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">looks_one</i>
+                Platforms
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Station Name</th>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {{ range .Platforms }}
+                            <tr>
+                                <td>{{ .ID }}</td>
+                                <td>{{ .Station.Name }}</td>
+                                <td>{{ .Name }}</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">date_range</i>
+                Days
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {{ range .Days }}
+                            <tr>
+                                <td>{{ .ID }}</td>
+                                <td>{{ .Date }}</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">access_time</i>
+                Calling Points
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Service Uid</th>
+                            <th>Service Headcode</th>
+                            <th>Station Name (Platform Name)</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {{ range .CallingPoints }}
+                            <tr>
+                                <td>{{ .ID }}</td>
+                                <td>{{ .Service.Uid }}</td>
+                                <td>{{ .Service.Headcode }}</td>
+                                <td>{{ .Platform.Station.Name }} ({{ .Platform.Name }})</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">train</i>
+                Services
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>TOC Name</th>
+                            <th>Uid</th>
+                            <th>Headcode</th>
+                            <th>Day</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {{ range .Services }}
+                            <tr>
+                                <td>{{ .ID }}</td>
+                                <td>{{ .TOC.Name }}</td>
+                                <td>{{ .Uid }}</td>
+                                <td>{{ .Headcode }}</td>
+                                <td>{{ .Day.Date }}</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+    </ul>
+</div>
+
+{{ template "footer.tmpl" . }}

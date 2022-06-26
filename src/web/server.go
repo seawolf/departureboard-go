@@ -17,6 +17,7 @@ func StartServer(ctx context.Context, client *entities.Client) {
 	engine := gin.Default()
 
 	routes(engine)
+	views(engine)
 
 	engine.Run()
 }
