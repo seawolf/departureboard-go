@@ -13,12 +13,21 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "arrival_time", Type: field.TypeTime},
 		{Name: "departure_time", Type: field.TypeTime},
+		{Name: "platform_calling_points", Type: field.TypeInt, Nullable: true},
 	}
 	// CallingPointsTable holds the schema information for the "calling_points" table.
 	CallingPointsTable = &schema.Table{
 		Name:       "calling_points",
 		Columns:    CallingPointsColumns,
 		PrimaryKey: []*schema.Column{CallingPointsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "calling_points_platforms_calling_points",
+				Columns:    []*schema.Column{CallingPointsColumns[3]},
+				RefColumns: []*schema.Column{PlatformsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// DaysColumns holds the columns for the "days" table.
 	DaysColumns = []*schema.Column{
@@ -98,5 +107,6 @@ var (
 )
 
 func init() {
+	CallingPointsTable.ForeignKeys[0].RefTable = PlatformsTable
 	PlatformsTable.ForeignKeys[0].RefTable = StationsTable
 }

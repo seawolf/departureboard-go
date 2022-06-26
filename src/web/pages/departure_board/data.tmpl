@@ -125,9 +125,8 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Service Uid</th>
-                            <th>Service Headcode</th>
-                            <th>Station Name (Platform Name)</th>
+                            <th>Station Name</th>
+                            <th>Platform</th>
                             <th>Arrival Time</th>
                             <th>Departure Time</th>
                         </tr>
@@ -137,9 +136,8 @@
                         {{ range .CallingPoints }}
                             <tr>
                                 <td>{{ .ID }}</td>
-                                <td>{{ .Service.Uid }}</td>
-                                <td>{{ .Service.Headcode }}</td>
-                                <td>{{ .Platform.Station.Name }} ({{ .Platform.Name }})</td>
+                                <td>{{ .Edges.Platform.Edges.Station.Name }}</td>
+                                <td>{{ .Edges.Platform.Name }}</td>
                                 <td>{{ .ArrivalTime }}</td>
                                 <td>{{ .DepartureTime }}</td>
                             </tr>

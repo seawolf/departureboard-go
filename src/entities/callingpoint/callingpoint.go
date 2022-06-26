@@ -15,8 +15,17 @@ const (
 	FieldArrivalTime = "arrival_time"
 	// FieldDepartureTime holds the string denoting the departure_time field in the database.
 	FieldDepartureTime = "departure_time"
+	// EdgePlatform holds the string denoting the platform edge name in mutations.
+	EdgePlatform = "platform"
 	// Table holds the table name of the callingpoint in the database.
 	Table = "calling_points"
+	// PlatformTable is the table that holds the platform relation/edge.
+	PlatformTable = "calling_points"
+	// PlatformInverseTable is the table name for the Platform entity.
+	// It exists in this package in order to avoid circular dependency with the "platform" package.
+	PlatformInverseTable = "platforms"
+	// PlatformColumn is the table column denoting the platform relation/edge.
+	PlatformColumn = "platform_calling_points"
 )
 
 // Columns holds all SQL columns for callingpoint fields.
@@ -26,10 +35,21 @@ var Columns = []string{
 	FieldDepartureTime,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "calling_points"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"platform_calling_points",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

@@ -119,6 +119,7 @@ func departureBoardDataDays(ctx context.Context, client *entities.Client) (days 
 func departureBoardDataCallingPoints(ctx context.Context, client *entities.Client) (callingPoints []*entities.CallingPoint, err error) {
 	callingPoints, err = client.CallingPoint.
 		Query().
+		WithPlatform(func(pq *entities.PlatformQuery) { pq.WithStation() }).
 		All(ctx)
 
 	if err != nil {

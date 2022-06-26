@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -56,9 +57,34 @@ func (cpu *CallingPointUpdate) SetNillableDepartureTime(t *time.Time) *CallingPo
 	return cpu
 }
 
+// SetPlatformID sets the "platform" edge to the Platform entity by ID.
+func (cpu *CallingPointUpdate) SetPlatformID(id int) *CallingPointUpdate {
+	cpu.mutation.SetPlatformID(id)
+	return cpu
+}
+
+// SetNillablePlatformID sets the "platform" edge to the Platform entity by ID if the given value is not nil.
+func (cpu *CallingPointUpdate) SetNillablePlatformID(id *int) *CallingPointUpdate {
+	if id != nil {
+		cpu = cpu.SetPlatformID(*id)
+	}
+	return cpu
+}
+
+// SetPlatform sets the "platform" edge to the Platform entity.
+func (cpu *CallingPointUpdate) SetPlatform(p *Platform) *CallingPointUpdate {
+	return cpu.SetPlatformID(p.ID)
+}
+
 // Mutation returns the CallingPointMutation object of the builder.
 func (cpu *CallingPointUpdate) Mutation() *CallingPointMutation {
 	return cpu.mutation
+}
+
+// ClearPlatform clears the "platform" edge to the Platform entity.
+func (cpu *CallingPointUpdate) ClearPlatform() *CallingPointUpdate {
+	cpu.mutation.ClearPlatform()
+	return cpu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -147,6 +173,41 @@ func (cpu *CallingPointUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: callingpoint.FieldDepartureTime,
 		})
 	}
+	if cpu.mutation.PlatformCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.PlatformTable,
+			Columns: []string{callingpoint.PlatformColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cpu.mutation.PlatformIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.PlatformTable,
+			Columns: []string{callingpoint.PlatformColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{callingpoint.Label}
@@ -194,9 +255,34 @@ func (cpuo *CallingPointUpdateOne) SetNillableDepartureTime(t *time.Time) *Calli
 	return cpuo
 }
 
+// SetPlatformID sets the "platform" edge to the Platform entity by ID.
+func (cpuo *CallingPointUpdateOne) SetPlatformID(id int) *CallingPointUpdateOne {
+	cpuo.mutation.SetPlatformID(id)
+	return cpuo
+}
+
+// SetNillablePlatformID sets the "platform" edge to the Platform entity by ID if the given value is not nil.
+func (cpuo *CallingPointUpdateOne) SetNillablePlatformID(id *int) *CallingPointUpdateOne {
+	if id != nil {
+		cpuo = cpuo.SetPlatformID(*id)
+	}
+	return cpuo
+}
+
+// SetPlatform sets the "platform" edge to the Platform entity.
+func (cpuo *CallingPointUpdateOne) SetPlatform(p *Platform) *CallingPointUpdateOne {
+	return cpuo.SetPlatformID(p.ID)
+}
+
 // Mutation returns the CallingPointMutation object of the builder.
 func (cpuo *CallingPointUpdateOne) Mutation() *CallingPointMutation {
 	return cpuo.mutation
+}
+
+// ClearPlatform clears the "platform" edge to the Platform entity.
+func (cpuo *CallingPointUpdateOne) ClearPlatform() *CallingPointUpdateOne {
+	cpuo.mutation.ClearPlatform()
+	return cpuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -308,6 +394,41 @@ func (cpuo *CallingPointUpdateOne) sqlSave(ctx context.Context) (_node *CallingP
 			Value:  value,
 			Column: callingpoint.FieldDepartureTime,
 		})
+	}
+	if cpuo.mutation.PlatformCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.PlatformTable,
+			Columns: []string{callingpoint.PlatformColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cpuo.mutation.PlatformIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.PlatformTable,
+			Columns: []string{callingpoint.PlatformColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &CallingPoint{config: cpuo.config}
 	_spec.Assign = _node.assignValues

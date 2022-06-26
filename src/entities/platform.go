@@ -28,9 +28,11 @@ type Platform struct {
 type PlatformEdges struct {
 	// Station holds the value of the station edge.
 	Station *Station `json:"station,omitempty"`
+	// CallingPoints holds the value of the calling_points edge.
+	CallingPoints []*CallingPoint `json:"calling_points,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // StationOrErr returns the Station value or an error if the edge
@@ -45,6 +47,15 @@ func (e PlatformEdges) StationOrErr() (*Station, error) {
 		return e.Station, nil
 	}
 	return nil, &NotLoadedError{edge: "station"}
+}
+
+// CallingPointsOrErr returns the CallingPoints value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlatformEdges) CallingPointsOrErr() ([]*CallingPoint, error) {
+	if e.loadedTypes[1] {
+		return e.CallingPoints, nil
+	}
+	return nil, &NotLoadedError{edge: "calling_points"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -100,6 +111,11 @@ func (pl *Platform) assignValues(columns []string, values []interface{}) error {
 // QueryStation queries the "station" edge of the Platform entity.
 func (pl *Platform) QueryStation() *StationQuery {
 	return (&PlatformClient{config: pl.config}).QueryStation(pl)
+}
+
+// QueryCallingPoints queries the "calling_points" edge of the Platform entity.
+func (pl *Platform) QueryCallingPoints() *CallingPointQuery {
+	return (&PlatformClient{config: pl.config}).QueryCallingPoints(pl)
 }
 
 // Update returns a builder for updating this Platform.

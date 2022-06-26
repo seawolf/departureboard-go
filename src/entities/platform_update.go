@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
@@ -61,6 +62,21 @@ func (pu *PlatformUpdate) SetStation(s *Station) *PlatformUpdate {
 	return pu.SetStationID(s.ID)
 }
 
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by IDs.
+func (pu *PlatformUpdate) AddCallingPointIDs(ids ...int) *PlatformUpdate {
+	pu.mutation.AddCallingPointIDs(ids...)
+	return pu
+}
+
+// AddCallingPoints adds the "calling_points" edges to the CallingPoint entity.
+func (pu *PlatformUpdate) AddCallingPoints(c ...*CallingPoint) *PlatformUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return pu.AddCallingPointIDs(ids...)
+}
+
 // Mutation returns the PlatformMutation object of the builder.
 func (pu *PlatformUpdate) Mutation() *PlatformMutation {
 	return pu.mutation
@@ -70,6 +86,27 @@ func (pu *PlatformUpdate) Mutation() *PlatformMutation {
 func (pu *PlatformUpdate) ClearStation() *PlatformUpdate {
 	pu.mutation.ClearStation()
 	return pu
+}
+
+// ClearCallingPoints clears all "calling_points" edges to the CallingPoint entity.
+func (pu *PlatformUpdate) ClearCallingPoints() *PlatformUpdate {
+	pu.mutation.ClearCallingPoints()
+	return pu
+}
+
+// RemoveCallingPointIDs removes the "calling_points" edge to CallingPoint entities by IDs.
+func (pu *PlatformUpdate) RemoveCallingPointIDs(ids ...int) *PlatformUpdate {
+	pu.mutation.RemoveCallingPointIDs(ids...)
+	return pu
+}
+
+// RemoveCallingPoints removes "calling_points" edges to CallingPoint entities.
+func (pu *PlatformUpdate) RemoveCallingPoints(c ...*CallingPoint) *PlatformUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return pu.RemoveCallingPointIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -186,6 +223,60 @@ func (pu *PlatformUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   platform.CallingPointsTable,
+			Columns: []string{platform.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedCallingPointsIDs(); len(nodes) > 0 && !pu.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   platform.CallingPointsTable,
+			Columns: []string{platform.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.CallingPointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   platform.CallingPointsTable,
+			Columns: []string{platform.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{platform.Label}
@@ -238,6 +329,21 @@ func (puo *PlatformUpdateOne) SetStation(s *Station) *PlatformUpdateOne {
 	return puo.SetStationID(s.ID)
 }
 
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by IDs.
+func (puo *PlatformUpdateOne) AddCallingPointIDs(ids ...int) *PlatformUpdateOne {
+	puo.mutation.AddCallingPointIDs(ids...)
+	return puo
+}
+
+// AddCallingPoints adds the "calling_points" edges to the CallingPoint entity.
+func (puo *PlatformUpdateOne) AddCallingPoints(c ...*CallingPoint) *PlatformUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return puo.AddCallingPointIDs(ids...)
+}
+
 // Mutation returns the PlatformMutation object of the builder.
 func (puo *PlatformUpdateOne) Mutation() *PlatformMutation {
 	return puo.mutation
@@ -247,6 +353,27 @@ func (puo *PlatformUpdateOne) Mutation() *PlatformMutation {
 func (puo *PlatformUpdateOne) ClearStation() *PlatformUpdateOne {
 	puo.mutation.ClearStation()
 	return puo
+}
+
+// ClearCallingPoints clears all "calling_points" edges to the CallingPoint entity.
+func (puo *PlatformUpdateOne) ClearCallingPoints() *PlatformUpdateOne {
+	puo.mutation.ClearCallingPoints()
+	return puo
+}
+
+// RemoveCallingPointIDs removes the "calling_points" edge to CallingPoint entities by IDs.
+func (puo *PlatformUpdateOne) RemoveCallingPointIDs(ids ...int) *PlatformUpdateOne {
+	puo.mutation.RemoveCallingPointIDs(ids...)
+	return puo
+}
+
+// RemoveCallingPoints removes "calling_points" edges to CallingPoint entities.
+func (puo *PlatformUpdateOne) RemoveCallingPoints(c ...*CallingPoint) *PlatformUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return puo.RemoveCallingPointIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -379,6 +506,60 @@ func (puo *PlatformUpdateOne) sqlSave(ctx context.Context) (_node *Platform, err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: station.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   platform.CallingPointsTable,
+			Columns: []string{platform.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedCallingPointsIDs(); len(nodes) > 0 && !puo.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   platform.CallingPointsTable,
+			Columns: []string{platform.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.CallingPointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   platform.CallingPointsTable,
+			Columns: []string{platform.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
 				},
 			},
 		}

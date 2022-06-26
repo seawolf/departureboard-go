@@ -7,6 +7,7 @@ import (
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -255,6 +256,34 @@ func DepartureTimeLT(v time.Time) predicate.CallingPoint {
 func DepartureTimeLTE(v time.Time) predicate.CallingPoint {
 	return predicate.CallingPoint(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldDepartureTime), v))
+	})
+}
+
+// HasPlatform applies the HasEdge predicate on the "platform" edge.
+func HasPlatform() predicate.CallingPoint {
+	return predicate.CallingPoint(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PlatformTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, PlatformTable, PlatformColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPlatformWith applies the HasEdge predicate on the "platform" edge with a given conditions (other predicates).
+func HasPlatformWith(preds ...predicate.Platform) predicate.CallingPoint {
+	return predicate.CallingPoint(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PlatformInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, PlatformTable, PlatformColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

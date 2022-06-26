@@ -237,6 +237,34 @@ func HasStationWith(preds ...predicate.Station) predicate.Platform {
 	})
 }
 
+// HasCallingPoints applies the HasEdge predicate on the "calling_points" edge.
+func HasCallingPoints() predicate.Platform {
+	return predicate.Platform(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(CallingPointsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CallingPointsTable, CallingPointsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCallingPointsWith applies the HasEdge predicate on the "calling_points" edge with a given conditions (other predicates).
+func HasCallingPointsWith(preds ...predicate.CallingPoint) predicate.Platform {
+	return predicate.Platform(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(CallingPointsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CallingPointsTable, CallingPointsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Platform) predicate.Platform {
 	return predicate.Platform(func(s *sql.Selector) {

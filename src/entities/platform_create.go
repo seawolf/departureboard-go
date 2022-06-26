@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -51,6 +52,21 @@ func (pc *PlatformCreate) SetNillableStationID(id *int) *PlatformCreate {
 // SetStation sets the "station" edge to the Station entity.
 func (pc *PlatformCreate) SetStation(s *Station) *PlatformCreate {
 	return pc.SetStationID(s.ID)
+}
+
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by IDs.
+func (pc *PlatformCreate) AddCallingPointIDs(ids ...int) *PlatformCreate {
+	pc.mutation.AddCallingPointIDs(ids...)
+	return pc
+}
+
+// AddCallingPoints adds the "calling_points" edges to the CallingPoint entity.
+func (pc *PlatformCreate) AddCallingPoints(c ...*CallingPoint) *PlatformCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return pc.AddCallingPointIDs(ids...)
 }
 
 // Mutation returns the PlatformMutation object of the builder.
@@ -188,6 +204,25 @@ func (pc *PlatformCreate) createSpec() (*Platform, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.station_platforms = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.CallingPointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   platform.CallingPointsTable,
+			Columns: []string{platform.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

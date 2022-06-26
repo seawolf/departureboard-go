@@ -40,15 +40,17 @@ const (
 // CallingPointMutation represents an operation that mutates the CallingPoint nodes in the graph.
 type CallingPointMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	arrival_time   *time.Time
-	departure_time *time.Time
-	clearedFields  map[string]struct{}
-	done           bool
-	oldValue       func(context.Context) (*CallingPoint, error)
-	predicates     []predicate.CallingPoint
+	op              Op
+	typ             string
+	id              *int
+	arrival_time    *time.Time
+	departure_time  *time.Time
+	clearedFields   map[string]struct{}
+	platform        *int
+	clearedplatform bool
+	done            bool
+	oldValue        func(context.Context) (*CallingPoint, error)
+	predicates      []predicate.CallingPoint
 }
 
 var _ ent.Mutation = (*CallingPointMutation)(nil)
@@ -221,6 +223,45 @@ func (m *CallingPointMutation) ResetDepartureTime() {
 	m.departure_time = nil
 }
 
+// SetPlatformID sets the "platform" edge to the Platform entity by id.
+func (m *CallingPointMutation) SetPlatformID(id int) {
+	m.platform = &id
+}
+
+// ClearPlatform clears the "platform" edge to the Platform entity.
+func (m *CallingPointMutation) ClearPlatform() {
+	m.clearedplatform = true
+}
+
+// PlatformCleared reports if the "platform" edge to the Platform entity was cleared.
+func (m *CallingPointMutation) PlatformCleared() bool {
+	return m.clearedplatform
+}
+
+// PlatformID returns the "platform" edge ID in the mutation.
+func (m *CallingPointMutation) PlatformID() (id int, exists bool) {
+	if m.platform != nil {
+		return *m.platform, true
+	}
+	return
+}
+
+// PlatformIDs returns the "platform" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PlatformID instead. It exists only for internal usage by the builders.
+func (m *CallingPointMutation) PlatformIDs() (ids []int) {
+	if id := m.platform; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPlatform resets all changes to the "platform" edge.
+func (m *CallingPointMutation) ResetPlatform() {
+	m.platform = nil
+	m.clearedplatform = false
+}
+
 // Where appends a list predicates to the CallingPointMutation builder.
 func (m *CallingPointMutation) Where(ps ...predicate.CallingPoint) {
 	m.predicates = append(m.predicates, ps...)
@@ -356,49 +397,77 @@ func (m *CallingPointMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CallingPointMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.platform != nil {
+		edges = append(edges, callingpoint.EdgePlatform)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *CallingPointMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case callingpoint.EdgePlatform:
+		if id := m.platform; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CallingPointMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *CallingPointMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CallingPointMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedplatform {
+		edges = append(edges, callingpoint.EdgePlatform)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *CallingPointMutation) EdgeCleared(name string) bool {
+	switch name {
+	case callingpoint.EdgePlatform:
+		return m.clearedplatform
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *CallingPointMutation) ClearEdge(name string) error {
+	switch name {
+	case callingpoint.EdgePlatform:
+		m.ClearPlatform()
+		return nil
+	}
 	return fmt.Errorf("unknown CallingPoint unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *CallingPointMutation) ResetEdge(name string) error {
+	switch name {
+	case callingpoint.EdgePlatform:
+		m.ResetPlatform()
+		return nil
+	}
 	return fmt.Errorf("unknown CallingPoint edge %s", name)
 }
 
@@ -716,16 +785,19 @@ func (m *DayMutation) ResetEdge(name string) error {
 // PlatformMutation represents an operation that mutates the Platform nodes in the graph.
 type PlatformMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	name           *string
-	clearedFields  map[string]struct{}
-	station        *int
-	clearedstation bool
-	done           bool
-	oldValue       func(context.Context) (*Platform, error)
-	predicates     []predicate.Platform
+	op                    Op
+	typ                   string
+	id                    *int
+	name                  *string
+	clearedFields         map[string]struct{}
+	station               *int
+	clearedstation        bool
+	calling_points        map[int]struct{}
+	removedcalling_points map[int]struct{}
+	clearedcalling_points bool
+	done                  bool
+	oldValue              func(context.Context) (*Platform, error)
+	predicates            []predicate.Platform
 }
 
 var _ ent.Mutation = (*PlatformMutation)(nil)
@@ -901,6 +973,60 @@ func (m *PlatformMutation) ResetStation() {
 	m.clearedstation = false
 }
 
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by ids.
+func (m *PlatformMutation) AddCallingPointIDs(ids ...int) {
+	if m.calling_points == nil {
+		m.calling_points = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.calling_points[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCallingPoints clears the "calling_points" edge to the CallingPoint entity.
+func (m *PlatformMutation) ClearCallingPoints() {
+	m.clearedcalling_points = true
+}
+
+// CallingPointsCleared reports if the "calling_points" edge to the CallingPoint entity was cleared.
+func (m *PlatformMutation) CallingPointsCleared() bool {
+	return m.clearedcalling_points
+}
+
+// RemoveCallingPointIDs removes the "calling_points" edge to the CallingPoint entity by IDs.
+func (m *PlatformMutation) RemoveCallingPointIDs(ids ...int) {
+	if m.removedcalling_points == nil {
+		m.removedcalling_points = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.calling_points, ids[i])
+		m.removedcalling_points[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCallingPoints returns the removed IDs of the "calling_points" edge to the CallingPoint entity.
+func (m *PlatformMutation) RemovedCallingPointsIDs() (ids []int) {
+	for id := range m.removedcalling_points {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CallingPointsIDs returns the "calling_points" edge IDs in the mutation.
+func (m *PlatformMutation) CallingPointsIDs() (ids []int) {
+	for id := range m.calling_points {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCallingPoints resets all changes to the "calling_points" edge.
+func (m *PlatformMutation) ResetCallingPoints() {
+	m.calling_points = nil
+	m.clearedcalling_points = false
+	m.removedcalling_points = nil
+}
+
 // Where appends a list predicates to the PlatformMutation builder.
 func (m *PlatformMutation) Where(ps ...predicate.Platform) {
 	m.predicates = append(m.predicates, ps...)
@@ -1019,9 +1145,12 @@ func (m *PlatformMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PlatformMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.station != nil {
 		edges = append(edges, platform.EdgeStation)
+	}
+	if m.calling_points != nil {
+		edges = append(edges, platform.EdgeCallingPoints)
 	}
 	return edges
 }
@@ -1034,13 +1163,22 @@ func (m *PlatformMutation) AddedIDs(name string) []ent.Value {
 		if id := m.station; id != nil {
 			return []ent.Value{*id}
 		}
+	case platform.EdgeCallingPoints:
+		ids := make([]ent.Value, 0, len(m.calling_points))
+		for id := range m.calling_points {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PlatformMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedcalling_points != nil {
+		edges = append(edges, platform.EdgeCallingPoints)
+	}
 	return edges
 }
 
@@ -1048,15 +1186,24 @@ func (m *PlatformMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *PlatformMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case platform.EdgeCallingPoints:
+		ids := make([]ent.Value, 0, len(m.removedcalling_points))
+		for id := range m.removedcalling_points {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PlatformMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedstation {
 		edges = append(edges, platform.EdgeStation)
+	}
+	if m.clearedcalling_points {
+		edges = append(edges, platform.EdgeCallingPoints)
 	}
 	return edges
 }
@@ -1067,6 +1214,8 @@ func (m *PlatformMutation) EdgeCleared(name string) bool {
 	switch name {
 	case platform.EdgeStation:
 		return m.clearedstation
+	case platform.EdgeCallingPoints:
+		return m.clearedcalling_points
 	}
 	return false
 }
@@ -1088,6 +1237,9 @@ func (m *PlatformMutation) ResetEdge(name string) error {
 	switch name {
 	case platform.EdgeStation:
 		m.ResetStation()
+		return nil
+	case platform.EdgeCallingPoints:
+		m.ResetCallingPoints()
 		return nil
 	}
 	return fmt.Errorf("unknown Platform edge %s", name)

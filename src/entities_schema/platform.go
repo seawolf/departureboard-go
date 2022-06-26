@@ -21,10 +21,11 @@ func (Platform) Fields() []ent.Field {
 
 // Edges of the Platform.
 func (Platform) Edges() []ent.Edge {
-
 	return []ent.Edge{
 		edge.From("station", Station.Type).
 			Ref("platforms").
 			Unique(),
+
+		edge.To("calling_points", CallingPoint.Type),
 	}
 }

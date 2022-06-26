@@ -9,6 +9,7 @@ import (
 	"math"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -24,6 +25,9 @@ type CallingPointQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.CallingPoint
+	// eager-loading edges.
+	withPlatform *PlatformQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (cpq *CallingPointQuery) Unique(unique bool) *CallingPointQuery {
 func (cpq *CallingPointQuery) Order(o ...OrderFunc) *CallingPointQuery {
 	cpq.order = append(cpq.order, o...)
 	return cpq
+}
+
+// QueryPlatform chains the current query on the "platform" edge.
+func (cpq *CallingPointQuery) QueryPlatform() *PlatformQuery {
+	query := &PlatformQuery{config: cpq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cpq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(callingpoint.Table, callingpoint.FieldID, selector),
+			sqlgraph.To(platform.Table, platform.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, callingpoint.PlatformTable, callingpoint.PlatformColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first CallingPoint entity from the query.
@@ -236,16 +262,28 @@ func (cpq *CallingPointQuery) Clone() *CallingPointQuery {
 		return nil
 	}
 	return &CallingPointQuery{
-		config:     cpq.config,
-		limit:      cpq.limit,
-		offset:     cpq.offset,
-		order:      append([]OrderFunc{}, cpq.order...),
-		predicates: append([]predicate.CallingPoint{}, cpq.predicates...),
+		config:       cpq.config,
+		limit:        cpq.limit,
+		offset:       cpq.offset,
+		order:        append([]OrderFunc{}, cpq.order...),
+		predicates:   append([]predicate.CallingPoint{}, cpq.predicates...),
+		withPlatform: cpq.withPlatform.Clone(),
 		// clone intermediate query.
 		sql:    cpq.sql.Clone(),
 		path:   cpq.path,
 		unique: cpq.unique,
 	}
+}
+
+// WithPlatform tells the query-builder to eager-load the nodes that are connected to
+// the "platform" edge. The optional arguments are used to configure the query builder of the edge.
+func (cpq *CallingPointQuery) WithPlatform(opts ...func(*PlatformQuery)) *CallingPointQuery {
+	query := &PlatformQuery{config: cpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cpq.withPlatform = query
+	return cpq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,9 +349,19 @@ func (cpq *CallingPointQuery) prepareQuery(ctx context.Context) error {
 
 func (cpq *CallingPointQuery) sqlAll(ctx context.Context) ([]*CallingPoint, error) {
 	var (
-		nodes = []*CallingPoint{}
-		_spec = cpq.querySpec()
+		nodes       = []*CallingPoint{}
+		withFKs     = cpq.withFKs
+		_spec       = cpq.querySpec()
+		loadedTypes = [1]bool{
+			cpq.withPlatform != nil,
+		}
 	)
+	if cpq.withPlatform != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, callingpoint.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &CallingPoint{config: cpq.config}
 		nodes = append(nodes, node)
@@ -324,6 +372,7 @@ func (cpq *CallingPointQuery) sqlAll(ctx context.Context) ([]*CallingPoint, erro
 			return fmt.Errorf("entities: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, cpq.driver, _spec); err != nil {
@@ -332,6 +381,36 @@ func (cpq *CallingPointQuery) sqlAll(ctx context.Context) ([]*CallingPoint, erro
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := cpq.withPlatform; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*CallingPoint)
+		for i := range nodes {
+			if nodes[i].platform_calling_points == nil {
+				continue
+			}
+			fk := *nodes[i].platform_calling_points
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(platform.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "platform_calling_points" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Platform = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

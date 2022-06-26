@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -24,5 +25,9 @@ func (CallingPoint) Fields() []ent.Field {
 
 // Edges of the CallingPoint.
 func (CallingPoint) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("platform", Platform.Type).
+			Ref("calling_points").
+			Unique(),
+	}
 }

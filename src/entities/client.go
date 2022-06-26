@@ -243,6 +243,22 @@ func (c *CallingPointClient) GetX(ctx context.Context, id int) *CallingPoint {
 	return obj
 }
 
+// QueryPlatform queries the platform edge of a CallingPoint.
+func (c *CallingPointClient) QueryPlatform(cp *CallingPoint) *PlatformQuery {
+	query := &PlatformQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := cp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(callingpoint.Table, callingpoint.FieldID, id),
+			sqlgraph.To(platform.Table, platform.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, callingpoint.PlatformTable, callingpoint.PlatformColumn),
+		)
+		fromV = sqlgraph.Neighbors(cp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CallingPointClient) Hooks() []Hook {
 	return c.hooks.CallingPoint
@@ -432,6 +448,22 @@ func (c *PlatformClient) QueryStation(pl *Platform) *StationQuery {
 			sqlgraph.From(platform.Table, platform.FieldID, id),
 			sqlgraph.To(station.Table, station.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, platform.StationTable, platform.StationColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCallingPoints queries the calling_points edge of a Platform.
+func (c *PlatformClient) QueryCallingPoints(pl *Platform) *CallingPointQuery {
+	query := &CallingPointQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(platform.Table, platform.FieldID, id),
+			sqlgraph.To(callingpoint.Table, callingpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, platform.CallingPointsTable, platform.CallingPointsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
 		return fromV, nil

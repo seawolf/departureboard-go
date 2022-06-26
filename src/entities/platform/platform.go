@@ -11,6 +11,8 @@ const (
 	FieldName = "name"
 	// EdgeStation holds the string denoting the station edge name in mutations.
 	EdgeStation = "station"
+	// EdgeCallingPoints holds the string denoting the calling_points edge name in mutations.
+	EdgeCallingPoints = "calling_points"
 	// Table holds the table name of the platform in the database.
 	Table = "platforms"
 	// StationTable is the table that holds the station relation/edge.
@@ -20,6 +22,13 @@ const (
 	StationInverseTable = "stations"
 	// StationColumn is the table column denoting the station relation/edge.
 	StationColumn = "station_platforms"
+	// CallingPointsTable is the table that holds the calling_points relation/edge.
+	CallingPointsTable = "calling_points"
+	// CallingPointsInverseTable is the table name for the CallingPoint entity.
+	// It exists in this package in order to avoid circular dependency with the "callingpoint" package.
+	CallingPointsInverseTable = "calling_points"
+	// CallingPointsColumn is the table column denoting the calling_points relation/edge.
+	CallingPointsColumn = "platform_calling_points"
 )
 
 // Columns holds all SQL columns for platform fields.

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -46,6 +47,25 @@ func (cpc *CallingPointCreate) SetNillableDepartureTime(t *time.Time) *CallingPo
 		cpc.SetDepartureTime(*t)
 	}
 	return cpc
+}
+
+// SetPlatformID sets the "platform" edge to the Platform entity by ID.
+func (cpc *CallingPointCreate) SetPlatformID(id int) *CallingPointCreate {
+	cpc.mutation.SetPlatformID(id)
+	return cpc
+}
+
+// SetNillablePlatformID sets the "platform" edge to the Platform entity by ID if the given value is not nil.
+func (cpc *CallingPointCreate) SetNillablePlatformID(id *int) *CallingPointCreate {
+	if id != nil {
+		cpc = cpc.SetPlatformID(*id)
+	}
+	return cpc
+}
+
+// SetPlatform sets the "platform" edge to the Platform entity.
+func (cpc *CallingPointCreate) SetPlatform(p *Platform) *CallingPointCreate {
+	return cpc.SetPlatformID(p.ID)
 }
 
 // Mutation returns the CallingPointMutation object of the builder.
@@ -179,6 +199,26 @@ func (cpc *CallingPointCreate) createSpec() (*CallingPoint, *sqlgraph.CreateSpec
 			Column: callingpoint.FieldDepartureTime,
 		})
 		_node.DepartureTime = value
+	}
+	if nodes := cpc.mutation.PlatformIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.PlatformTable,
+			Columns: []string{callingpoint.PlatformColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.platform_calling_points = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
