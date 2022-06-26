@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -31,6 +32,21 @@ func (tc *TOCCreate) SetNillableName(s *string) *TOCCreate {
 		tc.SetName(*s)
 	}
 	return tc
+}
+
+// AddServiceIDs adds the "services" edge to the Service entity by IDs.
+func (tc *TOCCreate) AddServiceIDs(ids ...int) *TOCCreate {
+	tc.mutation.AddServiceIDs(ids...)
+	return tc
+}
+
+// AddServices adds the "services" edges to the Service entity.
+func (tc *TOCCreate) AddServices(s ...*Service) *TOCCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tc.AddServiceIDs(ids...)
 }
 
 // Mutation returns the TOCMutation object of the builder.
@@ -149,6 +165,25 @@ func (tc *TOCCreate) createSpec() (*TOC, *sqlgraph.CreateSpec) {
 			Column: toc.FieldName,
 		})
 		_node.Name = value
+	}
+	if nodes := tc.mutation.ServicesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   toc.ServicesTable,
+			Columns: []string{toc.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

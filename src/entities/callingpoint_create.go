@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -66,6 +67,25 @@ func (cpc *CallingPointCreate) SetNillablePlatformID(id *int) *CallingPointCreat
 // SetPlatform sets the "platform" edge to the Platform entity.
 func (cpc *CallingPointCreate) SetPlatform(p *Platform) *CallingPointCreate {
 	return cpc.SetPlatformID(p.ID)
+}
+
+// SetServiceID sets the "service" edge to the Service entity by ID.
+func (cpc *CallingPointCreate) SetServiceID(id int) *CallingPointCreate {
+	cpc.mutation.SetServiceID(id)
+	return cpc
+}
+
+// SetNillableServiceID sets the "service" edge to the Service entity by ID if the given value is not nil.
+func (cpc *CallingPointCreate) SetNillableServiceID(id *int) *CallingPointCreate {
+	if id != nil {
+		cpc = cpc.SetServiceID(*id)
+	}
+	return cpc
+}
+
+// SetService sets the "service" edge to the Service entity.
+func (cpc *CallingPointCreate) SetService(s *Service) *CallingPointCreate {
+	return cpc.SetServiceID(s.ID)
 }
 
 // Mutation returns the CallingPointMutation object of the builder.
@@ -218,6 +238,26 @@ func (cpc *CallingPointCreate) createSpec() (*CallingPoint, *sqlgraph.CreateSpec
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.platform_calling_points = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cpc.mutation.ServiceIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.ServiceTable,
+			Columns: []string{callingpoint.ServiceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.service_calling_points = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

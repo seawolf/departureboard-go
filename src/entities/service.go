@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -19,6 +21,61 @@ type Service struct {
 	UID string `json:"uid,omitempty"`
 	// Headcode holds the value of the "headcode" field.
 	Headcode string `json:"headcode,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ServiceQuery when eager-loading is set.
+	Edges        ServiceEdges `json:"edges"`
+	day_services *int
+	toc_services *int
+}
+
+// ServiceEdges holds the relations/edges for other nodes in the graph.
+type ServiceEdges struct {
+	// Toc holds the value of the toc edge.
+	Toc *TOC `json:"toc,omitempty"`
+	// Day holds the value of the day edge.
+	Day *Day `json:"day,omitempty"`
+	// CallingPoints holds the value of the calling_points edge.
+	CallingPoints []*CallingPoint `json:"calling_points,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [3]bool
+}
+
+// TocOrErr returns the Toc value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ServiceEdges) TocOrErr() (*TOC, error) {
+	if e.loadedTypes[0] {
+		if e.Toc == nil {
+			// The edge toc was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: toc.Label}
+		}
+		return e.Toc, nil
+	}
+	return nil, &NotLoadedError{edge: "toc"}
+}
+
+// DayOrErr returns the Day value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ServiceEdges) DayOrErr() (*Day, error) {
+	if e.loadedTypes[1] {
+		if e.Day == nil {
+			// The edge day was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: day.Label}
+		}
+		return e.Day, nil
+	}
+	return nil, &NotLoadedError{edge: "day"}
+}
+
+// CallingPointsOrErr returns the CallingPoints value or an error if the edge
+// was not loaded in eager-loading.
+func (e ServiceEdges) CallingPointsOrErr() ([]*CallingPoint, error) {
+	if e.loadedTypes[2] {
+		return e.CallingPoints, nil
+	}
+	return nil, &NotLoadedError{edge: "calling_points"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -30,6 +87,10 @@ func (*Service) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case service.FieldUID, service.FieldHeadcode:
 			values[i] = new(sql.NullString)
+		case service.ForeignKeys[0]: // day_services
+			values[i] = new(sql.NullInt64)
+		case service.ForeignKeys[1]: // toc_services
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Service", columns[i])
 		}
@@ -63,9 +124,38 @@ func (s *Service) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				s.Headcode = value.String
 			}
+		case service.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field day_services", value)
+			} else if value.Valid {
+				s.day_services = new(int)
+				*s.day_services = int(value.Int64)
+			}
+		case service.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field toc_services", value)
+			} else if value.Valid {
+				s.toc_services = new(int)
+				*s.toc_services = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryToc queries the "toc" edge of the Service entity.
+func (s *Service) QueryToc() *TOCQuery {
+	return (&ServiceClient{config: s.config}).QueryToc(s)
+}
+
+// QueryDay queries the "day" edge of the Service entity.
+func (s *Service) QueryDay() *DayQuery {
+	return (&ServiceClient{config: s.config}).QueryDay(s)
+}
+
+// QueryCallingPoints queries the "calling_points" edge of the Service entity.
+func (s *Service) QueryCallingPoints() *CallingPointQuery {
+	return (&ServiceClient{config: s.config}).QueryCallingPoints(s)
 }
 
 // Update returns a builder for updating this Service.

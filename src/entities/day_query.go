@@ -4,12 +4,14 @@ package entities
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -24,6 +26,8 @@ type DayQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Day
+	// eager-loading edges.
+	withServices *ServiceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (dq *DayQuery) Unique(unique bool) *DayQuery {
 func (dq *DayQuery) Order(o ...OrderFunc) *DayQuery {
 	dq.order = append(dq.order, o...)
 	return dq
+}
+
+// QueryServices chains the current query on the "services" edge.
+func (dq *DayQuery) QueryServices() *ServiceQuery {
+	query := &ServiceQuery{config: dq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(day.Table, day.FieldID, selector),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, day.ServicesTable, day.ServicesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Day entity from the query.
@@ -236,16 +262,28 @@ func (dq *DayQuery) Clone() *DayQuery {
 		return nil
 	}
 	return &DayQuery{
-		config:     dq.config,
-		limit:      dq.limit,
-		offset:     dq.offset,
-		order:      append([]OrderFunc{}, dq.order...),
-		predicates: append([]predicate.Day{}, dq.predicates...),
+		config:       dq.config,
+		limit:        dq.limit,
+		offset:       dq.offset,
+		order:        append([]OrderFunc{}, dq.order...),
+		predicates:   append([]predicate.Day{}, dq.predicates...),
+		withServices: dq.withServices.Clone(),
 		// clone intermediate query.
 		sql:    dq.sql.Clone(),
 		path:   dq.path,
 		unique: dq.unique,
 	}
+}
+
+// WithServices tells the query-builder to eager-load the nodes that are connected to
+// the "services" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DayQuery) WithServices(opts ...func(*ServiceQuery)) *DayQuery {
+	query := &ServiceQuery{config: dq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withServices = query
+	return dq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,8 +349,11 @@ func (dq *DayQuery) prepareQuery(ctx context.Context) error {
 
 func (dq *DayQuery) sqlAll(ctx context.Context) ([]*Day, error) {
 	var (
-		nodes = []*Day{}
-		_spec = dq.querySpec()
+		nodes       = []*Day{}
+		_spec       = dq.querySpec()
+		loadedTypes = [1]bool{
+			dq.withServices != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Day{config: dq.config}
@@ -324,6 +365,7 @@ func (dq *DayQuery) sqlAll(ctx context.Context) ([]*Day, error) {
 			return fmt.Errorf("entities: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, dq.driver, _spec); err != nil {
@@ -332,6 +374,36 @@ func (dq *DayQuery) sqlAll(ctx context.Context) ([]*Day, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := dq.withServices; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Day)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Services = []*Service{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Service(func(s *sql.Selector) {
+			s.Where(sql.InValues(day.ServicesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.day_services
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "day_services" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "day_services" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Services = append(node.Edges.Services, n)
+		}
+	}
+
 	return nodes, nil
 }
 

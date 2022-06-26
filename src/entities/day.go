@@ -18,6 +18,27 @@ type Day struct {
 	ID int `json:"id,omitempty"`
 	// Date holds the value of the "date" field.
 	Date time.Time `json:"date,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the DayQuery when eager-loading is set.
+	Edges DayEdges `json:"edges"`
+}
+
+// DayEdges holds the relations/edges for other nodes in the graph.
+type DayEdges struct {
+	// Services holds the value of the services edge.
+	Services []*Service `json:"services,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// ServicesOrErr returns the Services value or an error if the edge
+// was not loaded in eager-loading.
+func (e DayEdges) ServicesOrErr() ([]*Service, error) {
+	if e.loadedTypes[0] {
+		return e.Services, nil
+	}
+	return nil, &NotLoadedError{edge: "services"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -59,6 +80,11 @@ func (d *Day) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryServices queries the "services" edge of the Day entity.
+func (d *Day) QueryServices() *ServiceQuery {
+	return (&DayClient{config: d.config}).QueryServices(d)
 }
 
 // Update returns a builder for updating this Day.

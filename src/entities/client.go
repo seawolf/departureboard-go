@@ -259,6 +259,22 @@ func (c *CallingPointClient) QueryPlatform(cp *CallingPoint) *PlatformQuery {
 	return query
 }
 
+// QueryService queries the service edge of a CallingPoint.
+func (c *CallingPointClient) QueryService(cp *CallingPoint) *ServiceQuery {
+	query := &ServiceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := cp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(callingpoint.Table, callingpoint.FieldID, id),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, callingpoint.ServiceTable, callingpoint.ServiceColumn),
+		)
+		fromV = sqlgraph.Neighbors(cp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CallingPointClient) Hooks() []Hook {
 	return c.hooks.CallingPoint
@@ -347,6 +363,22 @@ func (c *DayClient) GetX(ctx context.Context, id int) *Day {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryServices queries the services edge of a Day.
+func (c *DayClient) QueryServices(d *Day) *ServiceQuery {
+	query := &ServiceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(day.Table, day.FieldID, id),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, day.ServicesTable, day.ServicesColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -561,6 +593,54 @@ func (c *ServiceClient) GetX(ctx context.Context, id int) *Service {
 	return obj
 }
 
+// QueryToc queries the toc edge of a Service.
+func (c *ServiceClient) QueryToc(s *Service) *TOCQuery {
+	query := &TOCQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, id),
+			sqlgraph.To(toc.Table, toc.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, service.TocTable, service.TocColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDay queries the day edge of a Service.
+func (c *ServiceClient) QueryDay(s *Service) *DayQuery {
+	query := &DayQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, id),
+			sqlgraph.To(day.Table, day.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, service.DayTable, service.DayColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCallingPoints queries the calling_points edge of a Service.
+func (c *ServiceClient) QueryCallingPoints(s *Service) *CallingPointQuery {
+	query := &CallingPointQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, id),
+			sqlgraph.To(callingpoint.Table, callingpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, service.CallingPointsTable, service.CallingPointsColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ServiceClient) Hooks() []Hook {
 	return c.hooks.Service
@@ -755,6 +835,22 @@ func (c *TOCClient) GetX(ctx context.Context, id int) *TOC {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryServices queries the services edge of a TOC.
+func (c *TOCClient) QueryServices(t *TOC) *ServiceQuery {
+	query := &ServiceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(toc.Table, toc.FieldID, id),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, toc.ServicesTable, toc.ServicesColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

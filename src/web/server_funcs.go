@@ -3,15 +3,18 @@ package web
 import (
 	"fmt"
 	"html/template"
+	"strings"
 	"time"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities"
 	"github.com/gin-gonic/gin"
 )
 
 func funcs(engine *gin.Engine) {
 	engine.SetFuncMap(template.FuncMap{
-		"formatAsDate": formatAsDate,
-		"formatAsTime": formatAsTime,
+		"formatAsDate":      formatAsDate,
+		"formatAsTime":      formatAsTime,
+		"listCallingPoints": listCallingPoints,
 	})
 }
 
@@ -29,4 +32,14 @@ func formatAsTime(t time.Time) string {
 	}
 
 	return fmt.Sprintf("%02d:%02d", t.Hour(), t.Minute())
+}
+
+func listCallingPoints(callingPoints []*entities.CallingPoint) template.HTML {
+	list := make([]string, len(callingPoints))
+
+	for idx, callingPoint := range callingPoints {
+		list[idx] = callingPoint.Edges.Platform.Edges.Station.Name
+	}
+
+	return template.HTML(strings.Join(list[:], "<br />"))
 }

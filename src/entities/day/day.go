@@ -13,8 +13,17 @@ const (
 	FieldID = "id"
 	// FieldDate holds the string denoting the date field in the database.
 	FieldDate = "date"
+	// EdgeServices holds the string denoting the services edge name in mutations.
+	EdgeServices = "services"
 	// Table holds the table name of the day in the database.
 	Table = "days"
+	// ServicesTable is the table that holds the services relation/edge.
+	ServicesTable = "services"
+	// ServicesInverseTable is the table name for the Service entity.
+	// It exists in this package in order to avoid circular dependency with the "service" package.
+	ServicesInverseTable = "services"
+	// ServicesColumn is the table column denoting the services relation/edge.
+	ServicesColumn = "day_services"
 )
 
 // Columns holds all SQL columns for day fields.

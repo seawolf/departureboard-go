@@ -7,7 +7,10 @@ import (
 	"errors"
 	"fmt"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -45,6 +48,59 @@ func (sc *ServiceCreate) SetNillableHeadcode(s *string) *ServiceCreate {
 		sc.SetHeadcode(*s)
 	}
 	return sc
+}
+
+// SetTocID sets the "toc" edge to the TOC entity by ID.
+func (sc *ServiceCreate) SetTocID(id int) *ServiceCreate {
+	sc.mutation.SetTocID(id)
+	return sc
+}
+
+// SetNillableTocID sets the "toc" edge to the TOC entity by ID if the given value is not nil.
+func (sc *ServiceCreate) SetNillableTocID(id *int) *ServiceCreate {
+	if id != nil {
+		sc = sc.SetTocID(*id)
+	}
+	return sc
+}
+
+// SetToc sets the "toc" edge to the TOC entity.
+func (sc *ServiceCreate) SetToc(t *TOC) *ServiceCreate {
+	return sc.SetTocID(t.ID)
+}
+
+// SetDayID sets the "day" edge to the Day entity by ID.
+func (sc *ServiceCreate) SetDayID(id int) *ServiceCreate {
+	sc.mutation.SetDayID(id)
+	return sc
+}
+
+// SetNillableDayID sets the "day" edge to the Day entity by ID if the given value is not nil.
+func (sc *ServiceCreate) SetNillableDayID(id *int) *ServiceCreate {
+	if id != nil {
+		sc = sc.SetDayID(*id)
+	}
+	return sc
+}
+
+// SetDay sets the "day" edge to the Day entity.
+func (sc *ServiceCreate) SetDay(d *Day) *ServiceCreate {
+	return sc.SetDayID(d.ID)
+}
+
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by IDs.
+func (sc *ServiceCreate) AddCallingPointIDs(ids ...int) *ServiceCreate {
+	sc.mutation.AddCallingPointIDs(ids...)
+	return sc
+}
+
+// AddCallingPoints adds the "calling_points" edges to the CallingPoint entity.
+func (sc *ServiceCreate) AddCallingPoints(c ...*CallingPoint) *ServiceCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return sc.AddCallingPointIDs(ids...)
 }
 
 // Mutation returns the ServiceMutation object of the builder.
@@ -178,6 +234,65 @@ func (sc *ServiceCreate) createSpec() (*Service, *sqlgraph.CreateSpec) {
 			Column: service.FieldHeadcode,
 		})
 		_node.Headcode = value
+	}
+	if nodes := sc.mutation.TocIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.TocTable,
+			Columns: []string{service.TocColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: toc.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.toc_services = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sc.mutation.DayIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.DayTable,
+			Columns: []string{service.DayColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: day.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.day_services = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sc.mutation.CallingPointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   service.CallingPointsTable,
+			Columns: []string{service.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

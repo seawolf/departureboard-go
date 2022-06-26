@@ -5,6 +5,7 @@ package service
 import (
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -323,6 +324,90 @@ func HeadcodeEqualFold(v string) predicate.Service {
 func HeadcodeContainsFold(v string) predicate.Service {
 	return predicate.Service(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldHeadcode), v))
+	})
+}
+
+// HasToc applies the HasEdge predicate on the "toc" edge.
+func HasToc() predicate.Service {
+	return predicate.Service(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(TocTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TocTable, TocColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTocWith applies the HasEdge predicate on the "toc" edge with a given conditions (other predicates).
+func HasTocWith(preds ...predicate.TOC) predicate.Service {
+	return predicate.Service(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(TocInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, TocTable, TocColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDay applies the HasEdge predicate on the "day" edge.
+func HasDay() predicate.Service {
+	return predicate.Service(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(DayTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, DayTable, DayColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDayWith applies the HasEdge predicate on the "day" edge with a given conditions (other predicates).
+func HasDayWith(preds ...predicate.Day) predicate.Service {
+	return predicate.Service(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(DayInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, DayTable, DayColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCallingPoints applies the HasEdge predicate on the "calling_points" edge.
+func HasCallingPoints() predicate.Service {
+	return predicate.Service(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(CallingPointsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CallingPointsTable, CallingPointsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCallingPointsWith applies the HasEdge predicate on the "calling_points" edge with a given conditions (other predicates).
+func HasCallingPointsWith(preds ...predicate.CallingPoint) predicate.Service {
+	return predicate.Service(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(CallingPointsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CallingPointsTable, CallingPointsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

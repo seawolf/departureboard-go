@@ -17,6 +17,8 @@ const (
 	FieldDepartureTime = "departure_time"
 	// EdgePlatform holds the string denoting the platform edge name in mutations.
 	EdgePlatform = "platform"
+	// EdgeService holds the string denoting the service edge name in mutations.
+	EdgeService = "service"
 	// Table holds the table name of the callingpoint in the database.
 	Table = "calling_points"
 	// PlatformTable is the table that holds the platform relation/edge.
@@ -26,6 +28,13 @@ const (
 	PlatformInverseTable = "platforms"
 	// PlatformColumn is the table column denoting the platform relation/edge.
 	PlatformColumn = "platform_calling_points"
+	// ServiceTable is the table that holds the service relation/edge.
+	ServiceTable = "calling_points"
+	// ServiceInverseTable is the table name for the Service entity.
+	// It exists in this package in order to avoid circular dependency with the "service" package.
+	ServiceInverseTable = "services"
+	// ServiceColumn is the table column denoting the service relation/edge.
+	ServiceColumn = "service_calling_points"
 )
 
 // Columns holds all SQL columns for callingpoint fields.
@@ -39,6 +48,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"platform_calling_points",
+	"service_calling_points",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

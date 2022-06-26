@@ -7,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -55,9 +58,95 @@ func (su *ServiceUpdate) SetNillableHeadcode(s *string) *ServiceUpdate {
 	return su
 }
 
+// SetTocID sets the "toc" edge to the TOC entity by ID.
+func (su *ServiceUpdate) SetTocID(id int) *ServiceUpdate {
+	su.mutation.SetTocID(id)
+	return su
+}
+
+// SetNillableTocID sets the "toc" edge to the TOC entity by ID if the given value is not nil.
+func (su *ServiceUpdate) SetNillableTocID(id *int) *ServiceUpdate {
+	if id != nil {
+		su = su.SetTocID(*id)
+	}
+	return su
+}
+
+// SetToc sets the "toc" edge to the TOC entity.
+func (su *ServiceUpdate) SetToc(t *TOC) *ServiceUpdate {
+	return su.SetTocID(t.ID)
+}
+
+// SetDayID sets the "day" edge to the Day entity by ID.
+func (su *ServiceUpdate) SetDayID(id int) *ServiceUpdate {
+	su.mutation.SetDayID(id)
+	return su
+}
+
+// SetNillableDayID sets the "day" edge to the Day entity by ID if the given value is not nil.
+func (su *ServiceUpdate) SetNillableDayID(id *int) *ServiceUpdate {
+	if id != nil {
+		su = su.SetDayID(*id)
+	}
+	return su
+}
+
+// SetDay sets the "day" edge to the Day entity.
+func (su *ServiceUpdate) SetDay(d *Day) *ServiceUpdate {
+	return su.SetDayID(d.ID)
+}
+
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by IDs.
+func (su *ServiceUpdate) AddCallingPointIDs(ids ...int) *ServiceUpdate {
+	su.mutation.AddCallingPointIDs(ids...)
+	return su
+}
+
+// AddCallingPoints adds the "calling_points" edges to the CallingPoint entity.
+func (su *ServiceUpdate) AddCallingPoints(c ...*CallingPoint) *ServiceUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return su.AddCallingPointIDs(ids...)
+}
+
 // Mutation returns the ServiceMutation object of the builder.
 func (su *ServiceUpdate) Mutation() *ServiceMutation {
 	return su.mutation
+}
+
+// ClearToc clears the "toc" edge to the TOC entity.
+func (su *ServiceUpdate) ClearToc() *ServiceUpdate {
+	su.mutation.ClearToc()
+	return su
+}
+
+// ClearDay clears the "day" edge to the Day entity.
+func (su *ServiceUpdate) ClearDay() *ServiceUpdate {
+	su.mutation.ClearDay()
+	return su
+}
+
+// ClearCallingPoints clears all "calling_points" edges to the CallingPoint entity.
+func (su *ServiceUpdate) ClearCallingPoints() *ServiceUpdate {
+	su.mutation.ClearCallingPoints()
+	return su
+}
+
+// RemoveCallingPointIDs removes the "calling_points" edge to CallingPoint entities by IDs.
+func (su *ServiceUpdate) RemoveCallingPointIDs(ids ...int) *ServiceUpdate {
+	su.mutation.RemoveCallingPointIDs(ids...)
+	return su
+}
+
+// RemoveCallingPoints removes "calling_points" edges to CallingPoint entities.
+func (su *ServiceUpdate) RemoveCallingPoints(c ...*CallingPoint) *ServiceUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return su.RemoveCallingPointIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -146,6 +235,130 @@ func (su *ServiceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: service.FieldHeadcode,
 		})
 	}
+	if su.mutation.TocCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.TocTable,
+			Columns: []string{service.TocColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: toc.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.TocIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.TocTable,
+			Columns: []string{service.TocColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: toc.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if su.mutation.DayCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.DayTable,
+			Columns: []string{service.DayColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: day.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.DayIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.DayTable,
+			Columns: []string{service.DayColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: day.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if su.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   service.CallingPointsTable,
+			Columns: []string{service.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RemovedCallingPointsIDs(); len(nodes) > 0 && !su.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   service.CallingPointsTable,
+			Columns: []string{service.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.CallingPointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   service.CallingPointsTable,
+			Columns: []string{service.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{service.Label}
@@ -193,9 +406,95 @@ func (suo *ServiceUpdateOne) SetNillableHeadcode(s *string) *ServiceUpdateOne {
 	return suo
 }
 
+// SetTocID sets the "toc" edge to the TOC entity by ID.
+func (suo *ServiceUpdateOne) SetTocID(id int) *ServiceUpdateOne {
+	suo.mutation.SetTocID(id)
+	return suo
+}
+
+// SetNillableTocID sets the "toc" edge to the TOC entity by ID if the given value is not nil.
+func (suo *ServiceUpdateOne) SetNillableTocID(id *int) *ServiceUpdateOne {
+	if id != nil {
+		suo = suo.SetTocID(*id)
+	}
+	return suo
+}
+
+// SetToc sets the "toc" edge to the TOC entity.
+func (suo *ServiceUpdateOne) SetToc(t *TOC) *ServiceUpdateOne {
+	return suo.SetTocID(t.ID)
+}
+
+// SetDayID sets the "day" edge to the Day entity by ID.
+func (suo *ServiceUpdateOne) SetDayID(id int) *ServiceUpdateOne {
+	suo.mutation.SetDayID(id)
+	return suo
+}
+
+// SetNillableDayID sets the "day" edge to the Day entity by ID if the given value is not nil.
+func (suo *ServiceUpdateOne) SetNillableDayID(id *int) *ServiceUpdateOne {
+	if id != nil {
+		suo = suo.SetDayID(*id)
+	}
+	return suo
+}
+
+// SetDay sets the "day" edge to the Day entity.
+func (suo *ServiceUpdateOne) SetDay(d *Day) *ServiceUpdateOne {
+	return suo.SetDayID(d.ID)
+}
+
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by IDs.
+func (suo *ServiceUpdateOne) AddCallingPointIDs(ids ...int) *ServiceUpdateOne {
+	suo.mutation.AddCallingPointIDs(ids...)
+	return suo
+}
+
+// AddCallingPoints adds the "calling_points" edges to the CallingPoint entity.
+func (suo *ServiceUpdateOne) AddCallingPoints(c ...*CallingPoint) *ServiceUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return suo.AddCallingPointIDs(ids...)
+}
+
 // Mutation returns the ServiceMutation object of the builder.
 func (suo *ServiceUpdateOne) Mutation() *ServiceMutation {
 	return suo.mutation
+}
+
+// ClearToc clears the "toc" edge to the TOC entity.
+func (suo *ServiceUpdateOne) ClearToc() *ServiceUpdateOne {
+	suo.mutation.ClearToc()
+	return suo
+}
+
+// ClearDay clears the "day" edge to the Day entity.
+func (suo *ServiceUpdateOne) ClearDay() *ServiceUpdateOne {
+	suo.mutation.ClearDay()
+	return suo
+}
+
+// ClearCallingPoints clears all "calling_points" edges to the CallingPoint entity.
+func (suo *ServiceUpdateOne) ClearCallingPoints() *ServiceUpdateOne {
+	suo.mutation.ClearCallingPoints()
+	return suo
+}
+
+// RemoveCallingPointIDs removes the "calling_points" edge to CallingPoint entities by IDs.
+func (suo *ServiceUpdateOne) RemoveCallingPointIDs(ids ...int) *ServiceUpdateOne {
+	suo.mutation.RemoveCallingPointIDs(ids...)
+	return suo
+}
+
+// RemoveCallingPoints removes "calling_points" edges to CallingPoint entities.
+func (suo *ServiceUpdateOne) RemoveCallingPoints(c ...*CallingPoint) *ServiceUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return suo.RemoveCallingPointIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -307,6 +606,130 @@ func (suo *ServiceUpdateOne) sqlSave(ctx context.Context) (_node *Service, err e
 			Value:  value,
 			Column: service.FieldHeadcode,
 		})
+	}
+	if suo.mutation.TocCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.TocTable,
+			Columns: []string{service.TocColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: toc.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.TocIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.TocTable,
+			Columns: []string{service.TocColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: toc.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if suo.mutation.DayCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.DayTable,
+			Columns: []string{service.DayColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: day.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.DayIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   service.DayTable,
+			Columns: []string{service.DayColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: day.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if suo.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   service.CallingPointsTable,
+			Columns: []string{service.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RemovedCallingPointsIDs(); len(nodes) > 0 && !suo.mutation.CallingPointsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   service.CallingPointsTable,
+			Columns: []string{service.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.CallingPointsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   service.CallingPointsTable,
+			Columns: []string{service.CallingPointsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: callingpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Service{config: suo.config}
 	_spec.Assign = _node.assignValues

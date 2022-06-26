@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -27,6 +28,7 @@ type CallingPointQuery struct {
 	predicates []predicate.CallingPoint
 	// eager-loading edges.
 	withPlatform *PlatformQuery
+	withService  *ServiceQuery
 	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -79,6 +81,28 @@ func (cpq *CallingPointQuery) QueryPlatform() *PlatformQuery {
 			sqlgraph.From(callingpoint.Table, callingpoint.FieldID, selector),
 			sqlgraph.To(platform.Table, platform.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, callingpoint.PlatformTable, callingpoint.PlatformColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryService chains the current query on the "service" edge.
+func (cpq *CallingPointQuery) QueryService() *ServiceQuery {
+	query := &ServiceQuery{config: cpq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cpq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(callingpoint.Table, callingpoint.FieldID, selector),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, callingpoint.ServiceTable, callingpoint.ServiceColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cpq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,6 +292,7 @@ func (cpq *CallingPointQuery) Clone() *CallingPointQuery {
 		order:        append([]OrderFunc{}, cpq.order...),
 		predicates:   append([]predicate.CallingPoint{}, cpq.predicates...),
 		withPlatform: cpq.withPlatform.Clone(),
+		withService:  cpq.withService.Clone(),
 		// clone intermediate query.
 		sql:    cpq.sql.Clone(),
 		path:   cpq.path,
@@ -283,6 +308,17 @@ func (cpq *CallingPointQuery) WithPlatform(opts ...func(*PlatformQuery)) *Callin
 		opt(query)
 	}
 	cpq.withPlatform = query
+	return cpq
+}
+
+// WithService tells the query-builder to eager-load the nodes that are connected to
+// the "service" edge. The optional arguments are used to configure the query builder of the edge.
+func (cpq *CallingPointQuery) WithService(opts ...func(*ServiceQuery)) *CallingPointQuery {
+	query := &ServiceQuery{config: cpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cpq.withService = query
 	return cpq
 }
 
@@ -352,11 +388,12 @@ func (cpq *CallingPointQuery) sqlAll(ctx context.Context) ([]*CallingPoint, erro
 		nodes       = []*CallingPoint{}
 		withFKs     = cpq.withFKs
 		_spec       = cpq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			cpq.withPlatform != nil,
+			cpq.withService != nil,
 		}
 	)
-	if cpq.withPlatform != nil {
+	if cpq.withPlatform != nil || cpq.withService != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -407,6 +444,35 @@ func (cpq *CallingPointQuery) sqlAll(ctx context.Context) ([]*CallingPoint, erro
 			}
 			for i := range nodes {
 				nodes[i].Edges.Platform = n
+			}
+		}
+	}
+
+	if query := cpq.withService; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*CallingPoint)
+		for i := range nodes {
+			if nodes[i].service_calling_points == nil {
+				continue
+			}
+			fk := *nodes[i].service_calling_points
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(service.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "service_calling_points" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Service = n
 			}
 		}
 	}

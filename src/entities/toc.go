@@ -17,6 +17,27 @@ type TOC struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the TOCQuery when eager-loading is set.
+	Edges TOCEdges `json:"edges"`
+}
+
+// TOCEdges holds the relations/edges for other nodes in the graph.
+type TOCEdges struct {
+	// Services holds the value of the services edge.
+	Services []*Service `json:"services,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// ServicesOrErr returns the Services value or an error if the edge
+// was not loaded in eager-loading.
+func (e TOCEdges) ServicesOrErr() ([]*Service, error) {
+	if e.loadedTypes[0] {
+		return e.Services, nil
+	}
+	return nil, &NotLoadedError{edge: "services"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -58,6 +79,11 @@ func (t *TOC) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryServices queries the "services" edge of the TOC entity.
+func (t *TOC) QueryServices() *ServiceQuery {
+	return (&TOCClient{config: t.config}).QueryServices(t)
 }
 
 // Update returns a builder for updating this TOC.

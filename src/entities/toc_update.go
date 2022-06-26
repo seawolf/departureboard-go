@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -41,9 +42,45 @@ func (tu *TOCUpdate) SetNillableName(s *string) *TOCUpdate {
 	return tu
 }
 
+// AddServiceIDs adds the "services" edge to the Service entity by IDs.
+func (tu *TOCUpdate) AddServiceIDs(ids ...int) *TOCUpdate {
+	tu.mutation.AddServiceIDs(ids...)
+	return tu
+}
+
+// AddServices adds the "services" edges to the Service entity.
+func (tu *TOCUpdate) AddServices(s ...*Service) *TOCUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tu.AddServiceIDs(ids...)
+}
+
 // Mutation returns the TOCMutation object of the builder.
 func (tu *TOCUpdate) Mutation() *TOCMutation {
 	return tu.mutation
+}
+
+// ClearServices clears all "services" edges to the Service entity.
+func (tu *TOCUpdate) ClearServices() *TOCUpdate {
+	tu.mutation.ClearServices()
+	return tu
+}
+
+// RemoveServiceIDs removes the "services" edge to Service entities by IDs.
+func (tu *TOCUpdate) RemoveServiceIDs(ids ...int) *TOCUpdate {
+	tu.mutation.RemoveServiceIDs(ids...)
+	return tu
+}
+
+// RemoveServices removes "services" edges to Service entities.
+func (tu *TOCUpdate) RemoveServices(s ...*Service) *TOCUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tu.RemoveServiceIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -125,6 +162,60 @@ func (tu *TOCUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: toc.FieldName,
 		})
 	}
+	if tu.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   toc.ServicesTable,
+			Columns: []string{toc.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.RemovedServicesIDs(); len(nodes) > 0 && !tu.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   toc.ServicesTable,
+			Columns: []string{toc.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.ServicesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   toc.ServicesTable,
+			Columns: []string{toc.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{toc.Label}
@@ -158,9 +249,45 @@ func (tuo *TOCUpdateOne) SetNillableName(s *string) *TOCUpdateOne {
 	return tuo
 }
 
+// AddServiceIDs adds the "services" edge to the Service entity by IDs.
+func (tuo *TOCUpdateOne) AddServiceIDs(ids ...int) *TOCUpdateOne {
+	tuo.mutation.AddServiceIDs(ids...)
+	return tuo
+}
+
+// AddServices adds the "services" edges to the Service entity.
+func (tuo *TOCUpdateOne) AddServices(s ...*Service) *TOCUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tuo.AddServiceIDs(ids...)
+}
+
 // Mutation returns the TOCMutation object of the builder.
 func (tuo *TOCUpdateOne) Mutation() *TOCMutation {
 	return tuo.mutation
+}
+
+// ClearServices clears all "services" edges to the Service entity.
+func (tuo *TOCUpdateOne) ClearServices() *TOCUpdateOne {
+	tuo.mutation.ClearServices()
+	return tuo
+}
+
+// RemoveServiceIDs removes the "services" edge to Service entities by IDs.
+func (tuo *TOCUpdateOne) RemoveServiceIDs(ids ...int) *TOCUpdateOne {
+	tuo.mutation.RemoveServiceIDs(ids...)
+	return tuo
+}
+
+// RemoveServices removes "services" edges to Service entities.
+func (tuo *TOCUpdateOne) RemoveServices(s ...*Service) *TOCUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return tuo.RemoveServiceIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -265,6 +392,60 @@ func (tuo *TOCUpdateOne) sqlSave(ctx context.Context) (_node *TOC, err error) {
 			Value:  value,
 			Column: toc.FieldName,
 		})
+	}
+	if tuo.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   toc.ServicesTable,
+			Columns: []string{toc.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.RemovedServicesIDs(); len(nodes) > 0 && !tuo.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   toc.ServicesTable,
+			Columns: []string{toc.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.ServicesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   toc.ServicesTable,
+			Columns: []string{toc.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &TOC{config: tuo.config}
 	_spec.Assign = _node.assignValues

@@ -161,6 +161,7 @@
                             <th>Uid</th>
                             <th>Headcode</th>
                             <th>Day</th>
+                            <th>Calling Points</th>
                         </tr>
                     </thead>
 
@@ -168,10 +169,11 @@
                         {{ range .Services }}
                             <tr>
                                 <td>{{ .ID }}</td>
-                                <td>{{ .Edges.TOC.Name }}</td>
-                                <td>{{ .Uid }}</td>
+                                <td>{{ .Edges.Toc.Name }}</td>
+                                <td>{{ .UID }}</td>
                                 <td>{{ .Headcode }}</td>
-                                <td>{{ .Edges.Day.Date }}</td>
+                                <td>{{ .Edges.Day.Date | formatAsDate }}</td>
+                                <td>{{ .Edges.CallingPoints | listCallingPoints }}</td>
                             </tr>
                         {{ end }}
                     </tbody>

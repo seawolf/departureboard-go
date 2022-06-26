@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -76,6 +77,25 @@ func (cpu *CallingPointUpdate) SetPlatform(p *Platform) *CallingPointUpdate {
 	return cpu.SetPlatformID(p.ID)
 }
 
+// SetServiceID sets the "service" edge to the Service entity by ID.
+func (cpu *CallingPointUpdate) SetServiceID(id int) *CallingPointUpdate {
+	cpu.mutation.SetServiceID(id)
+	return cpu
+}
+
+// SetNillableServiceID sets the "service" edge to the Service entity by ID if the given value is not nil.
+func (cpu *CallingPointUpdate) SetNillableServiceID(id *int) *CallingPointUpdate {
+	if id != nil {
+		cpu = cpu.SetServiceID(*id)
+	}
+	return cpu
+}
+
+// SetService sets the "service" edge to the Service entity.
+func (cpu *CallingPointUpdate) SetService(s *Service) *CallingPointUpdate {
+	return cpu.SetServiceID(s.ID)
+}
+
 // Mutation returns the CallingPointMutation object of the builder.
 func (cpu *CallingPointUpdate) Mutation() *CallingPointMutation {
 	return cpu.mutation
@@ -84,6 +104,12 @@ func (cpu *CallingPointUpdate) Mutation() *CallingPointMutation {
 // ClearPlatform clears the "platform" edge to the Platform entity.
 func (cpu *CallingPointUpdate) ClearPlatform() *CallingPointUpdate {
 	cpu.mutation.ClearPlatform()
+	return cpu
+}
+
+// ClearService clears the "service" edge to the Service entity.
+func (cpu *CallingPointUpdate) ClearService() *CallingPointUpdate {
+	cpu.mutation.ClearService()
 	return cpu
 }
 
@@ -208,6 +234,41 @@ func (cpu *CallingPointUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if cpu.mutation.ServiceCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.ServiceTable,
+			Columns: []string{callingpoint.ServiceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cpu.mutation.ServiceIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.ServiceTable,
+			Columns: []string{callingpoint.ServiceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{callingpoint.Label}
@@ -274,6 +335,25 @@ func (cpuo *CallingPointUpdateOne) SetPlatform(p *Platform) *CallingPointUpdateO
 	return cpuo.SetPlatformID(p.ID)
 }
 
+// SetServiceID sets the "service" edge to the Service entity by ID.
+func (cpuo *CallingPointUpdateOne) SetServiceID(id int) *CallingPointUpdateOne {
+	cpuo.mutation.SetServiceID(id)
+	return cpuo
+}
+
+// SetNillableServiceID sets the "service" edge to the Service entity by ID if the given value is not nil.
+func (cpuo *CallingPointUpdateOne) SetNillableServiceID(id *int) *CallingPointUpdateOne {
+	if id != nil {
+		cpuo = cpuo.SetServiceID(*id)
+	}
+	return cpuo
+}
+
+// SetService sets the "service" edge to the Service entity.
+func (cpuo *CallingPointUpdateOne) SetService(s *Service) *CallingPointUpdateOne {
+	return cpuo.SetServiceID(s.ID)
+}
+
 // Mutation returns the CallingPointMutation object of the builder.
 func (cpuo *CallingPointUpdateOne) Mutation() *CallingPointMutation {
 	return cpuo.mutation
@@ -282,6 +362,12 @@ func (cpuo *CallingPointUpdateOne) Mutation() *CallingPointMutation {
 // ClearPlatform clears the "platform" edge to the Platform entity.
 func (cpuo *CallingPointUpdateOne) ClearPlatform() *CallingPointUpdateOne {
 	cpuo.mutation.ClearPlatform()
+	return cpuo
+}
+
+// ClearService clears the "service" edge to the Service entity.
+func (cpuo *CallingPointUpdateOne) ClearService() *CallingPointUpdateOne {
+	cpuo.mutation.ClearService()
 	return cpuo
 }
 
@@ -422,6 +508,41 @@ func (cpuo *CallingPointUpdateOne) sqlSave(ctx context.Context) (_node *CallingP
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: platform.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cpuo.mutation.ServiceCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.ServiceTable,
+			Columns: []string{callingpoint.ServiceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cpuo.mutation.ServiceIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   callingpoint.ServiceTable,
+			Columns: []string{callingpoint.ServiceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
 				},
 			},
 		}

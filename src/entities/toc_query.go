@@ -4,11 +4,13 @@ package entities
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -24,6 +26,8 @@ type TOCQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.TOC
+	// eager-loading edges.
+	withServices *ServiceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (tq *TOCQuery) Unique(unique bool) *TOCQuery {
 func (tq *TOCQuery) Order(o ...OrderFunc) *TOCQuery {
 	tq.order = append(tq.order, o...)
 	return tq
+}
+
+// QueryServices chains the current query on the "services" edge.
+func (tq *TOCQuery) QueryServices() *ServiceQuery {
+	query := &ServiceQuery{config: tq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(toc.Table, toc.FieldID, selector),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, toc.ServicesTable, toc.ServicesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first TOC entity from the query.
@@ -236,16 +262,28 @@ func (tq *TOCQuery) Clone() *TOCQuery {
 		return nil
 	}
 	return &TOCQuery{
-		config:     tq.config,
-		limit:      tq.limit,
-		offset:     tq.offset,
-		order:      append([]OrderFunc{}, tq.order...),
-		predicates: append([]predicate.TOC{}, tq.predicates...),
+		config:       tq.config,
+		limit:        tq.limit,
+		offset:       tq.offset,
+		order:        append([]OrderFunc{}, tq.order...),
+		predicates:   append([]predicate.TOC{}, tq.predicates...),
+		withServices: tq.withServices.Clone(),
 		// clone intermediate query.
 		sql:    tq.sql.Clone(),
 		path:   tq.path,
 		unique: tq.unique,
 	}
+}
+
+// WithServices tells the query-builder to eager-load the nodes that are connected to
+// the "services" edge. The optional arguments are used to configure the query builder of the edge.
+func (tq *TOCQuery) WithServices(opts ...func(*ServiceQuery)) *TOCQuery {
+	query := &ServiceQuery{config: tq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tq.withServices = query
+	return tq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,8 +349,11 @@ func (tq *TOCQuery) prepareQuery(ctx context.Context) error {
 
 func (tq *TOCQuery) sqlAll(ctx context.Context) ([]*TOC, error) {
 	var (
-		nodes = []*TOC{}
-		_spec = tq.querySpec()
+		nodes       = []*TOC{}
+		_spec       = tq.querySpec()
+		loadedTypes = [1]bool{
+			tq.withServices != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &TOC{config: tq.config}
@@ -324,6 +365,7 @@ func (tq *TOCQuery) sqlAll(ctx context.Context) ([]*TOC, error) {
 			return fmt.Errorf("entities: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, tq.driver, _spec); err != nil {
@@ -332,6 +374,36 @@ func (tq *TOCQuery) sqlAll(ctx context.Context) ([]*TOC, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := tq.withServices; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*TOC)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Services = []*Service{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Service(func(s *sql.Selector) {
+			s.Where(sql.InValues(toc.ServicesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.toc_services
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "toc_services" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "toc_services" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Services = append(node.Edges.Services, n)
+		}
+	}
+
 	return nodes, nil
 }
 

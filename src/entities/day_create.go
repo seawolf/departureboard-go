@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -32,6 +33,21 @@ func (dc *DayCreate) SetNillableDate(t *time.Time) *DayCreate {
 		dc.SetDate(*t)
 	}
 	return dc
+}
+
+// AddServiceIDs adds the "services" edge to the Service entity by IDs.
+func (dc *DayCreate) AddServiceIDs(ids ...int) *DayCreate {
+	dc.mutation.AddServiceIDs(ids...)
+	return dc
+}
+
+// AddServices adds the "services" edges to the Service entity.
+func (dc *DayCreate) AddServices(s ...*Service) *DayCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return dc.AddServiceIDs(ids...)
 }
 
 // Mutation returns the DayMutation object of the builder.
@@ -150,6 +166,25 @@ func (dc *DayCreate) createSpec() (*Day, *sqlgraph.CreateSpec) {
 			Column: day.FieldDate,
 		})
 		_node.Date = value
+	}
+	if nodes := dc.mutation.ServicesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   day.ServicesTable,
+			Columns: []string{day.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

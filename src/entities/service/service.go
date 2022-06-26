@@ -11,8 +11,35 @@ const (
 	FieldUID = "uid"
 	// FieldHeadcode holds the string denoting the headcode field in the database.
 	FieldHeadcode = "headcode"
+	// EdgeToc holds the string denoting the toc edge name in mutations.
+	EdgeToc = "toc"
+	// EdgeDay holds the string denoting the day edge name in mutations.
+	EdgeDay = "day"
+	// EdgeCallingPoints holds the string denoting the calling_points edge name in mutations.
+	EdgeCallingPoints = "calling_points"
 	// Table holds the table name of the service in the database.
 	Table = "services"
+	// TocTable is the table that holds the toc relation/edge.
+	TocTable = "services"
+	// TocInverseTable is the table name for the TOC entity.
+	// It exists in this package in order to avoid circular dependency with the "toc" package.
+	TocInverseTable = "to_cs"
+	// TocColumn is the table column denoting the toc relation/edge.
+	TocColumn = "toc_services"
+	// DayTable is the table that holds the day relation/edge.
+	DayTable = "services"
+	// DayInverseTable is the table name for the Day entity.
+	// It exists in this package in order to avoid circular dependency with the "day" package.
+	DayInverseTable = "days"
+	// DayColumn is the table column denoting the day relation/edge.
+	DayColumn = "day_services"
+	// CallingPointsTable is the table that holds the calling_points relation/edge.
+	CallingPointsTable = "calling_points"
+	// CallingPointsInverseTable is the table name for the CallingPoint entity.
+	// It exists in this package in order to avoid circular dependency with the "callingpoint" package.
+	CallingPointsInverseTable = "calling_points"
+	// CallingPointsColumn is the table column denoting the calling_points relation/edge.
+	CallingPointsColumn = "service_calling_points"
 )
 
 // Columns holds all SQL columns for service fields.
@@ -22,10 +49,22 @@ var Columns = []string{
 	FieldHeadcode,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "services"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"day_services",
+	"toc_services",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

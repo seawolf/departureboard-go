@@ -48,6 +48,8 @@ type CallingPointMutation struct {
 	clearedFields   map[string]struct{}
 	platform        *int
 	clearedplatform bool
+	service         *int
+	clearedservice  bool
 	done            bool
 	oldValue        func(context.Context) (*CallingPoint, error)
 	predicates      []predicate.CallingPoint
@@ -262,6 +264,45 @@ func (m *CallingPointMutation) ResetPlatform() {
 	m.clearedplatform = false
 }
 
+// SetServiceID sets the "service" edge to the Service entity by id.
+func (m *CallingPointMutation) SetServiceID(id int) {
+	m.service = &id
+}
+
+// ClearService clears the "service" edge to the Service entity.
+func (m *CallingPointMutation) ClearService() {
+	m.clearedservice = true
+}
+
+// ServiceCleared reports if the "service" edge to the Service entity was cleared.
+func (m *CallingPointMutation) ServiceCleared() bool {
+	return m.clearedservice
+}
+
+// ServiceID returns the "service" edge ID in the mutation.
+func (m *CallingPointMutation) ServiceID() (id int, exists bool) {
+	if m.service != nil {
+		return *m.service, true
+	}
+	return
+}
+
+// ServiceIDs returns the "service" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ServiceID instead. It exists only for internal usage by the builders.
+func (m *CallingPointMutation) ServiceIDs() (ids []int) {
+	if id := m.service; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetService resets all changes to the "service" edge.
+func (m *CallingPointMutation) ResetService() {
+	m.service = nil
+	m.clearedservice = false
+}
+
 // Where appends a list predicates to the CallingPointMutation builder.
 func (m *CallingPointMutation) Where(ps ...predicate.CallingPoint) {
 	m.predicates = append(m.predicates, ps...)
@@ -397,9 +438,12 @@ func (m *CallingPointMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CallingPointMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.platform != nil {
 		edges = append(edges, callingpoint.EdgePlatform)
+	}
+	if m.service != nil {
+		edges = append(edges, callingpoint.EdgeService)
 	}
 	return edges
 }
@@ -412,13 +456,17 @@ func (m *CallingPointMutation) AddedIDs(name string) []ent.Value {
 		if id := m.platform; id != nil {
 			return []ent.Value{*id}
 		}
+	case callingpoint.EdgeService:
+		if id := m.service; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CallingPointMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -432,9 +480,12 @@ func (m *CallingPointMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CallingPointMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedplatform {
 		edges = append(edges, callingpoint.EdgePlatform)
+	}
+	if m.clearedservice {
+		edges = append(edges, callingpoint.EdgeService)
 	}
 	return edges
 }
@@ -445,6 +496,8 @@ func (m *CallingPointMutation) EdgeCleared(name string) bool {
 	switch name {
 	case callingpoint.EdgePlatform:
 		return m.clearedplatform
+	case callingpoint.EdgeService:
+		return m.clearedservice
 	}
 	return false
 }
@@ -455,6 +508,9 @@ func (m *CallingPointMutation) ClearEdge(name string) error {
 	switch name {
 	case callingpoint.EdgePlatform:
 		m.ClearPlatform()
+		return nil
+	case callingpoint.EdgeService:
+		m.ClearService()
 		return nil
 	}
 	return fmt.Errorf("unknown CallingPoint unique edge %s", name)
@@ -467,6 +523,9 @@ func (m *CallingPointMutation) ResetEdge(name string) error {
 	case callingpoint.EdgePlatform:
 		m.ResetPlatform()
 		return nil
+	case callingpoint.EdgeService:
+		m.ResetService()
+		return nil
 	}
 	return fmt.Errorf("unknown CallingPoint edge %s", name)
 }
@@ -474,14 +533,17 @@ func (m *CallingPointMutation) ResetEdge(name string) error {
 // DayMutation represents an operation that mutates the Day nodes in the graph.
 type DayMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	date          *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Day, error)
-	predicates    []predicate.Day
+	op              Op
+	typ             string
+	id              *int
+	date            *time.Time
+	clearedFields   map[string]struct{}
+	services        map[int]struct{}
+	removedservices map[int]struct{}
+	clearedservices bool
+	done            bool
+	oldValue        func(context.Context) (*Day, error)
+	predicates      []predicate.Day
 }
 
 var _ ent.Mutation = (*DayMutation)(nil)
@@ -618,6 +680,60 @@ func (m *DayMutation) ResetDate() {
 	m.date = nil
 }
 
+// AddServiceIDs adds the "services" edge to the Service entity by ids.
+func (m *DayMutation) AddServiceIDs(ids ...int) {
+	if m.services == nil {
+		m.services = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.services[ids[i]] = struct{}{}
+	}
+}
+
+// ClearServices clears the "services" edge to the Service entity.
+func (m *DayMutation) ClearServices() {
+	m.clearedservices = true
+}
+
+// ServicesCleared reports if the "services" edge to the Service entity was cleared.
+func (m *DayMutation) ServicesCleared() bool {
+	return m.clearedservices
+}
+
+// RemoveServiceIDs removes the "services" edge to the Service entity by IDs.
+func (m *DayMutation) RemoveServiceIDs(ids ...int) {
+	if m.removedservices == nil {
+		m.removedservices = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.services, ids[i])
+		m.removedservices[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedServices returns the removed IDs of the "services" edge to the Service entity.
+func (m *DayMutation) RemovedServicesIDs() (ids []int) {
+	for id := range m.removedservices {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ServicesIDs returns the "services" edge IDs in the mutation.
+func (m *DayMutation) ServicesIDs() (ids []int) {
+	for id := range m.services {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetServices resets all changes to the "services" edge.
+func (m *DayMutation) ResetServices() {
+	m.services = nil
+	m.clearedservices = false
+	m.removedservices = nil
+}
+
 // Where appends a list predicates to the DayMutation builder.
 func (m *DayMutation) Where(ps ...predicate.Day) {
 	m.predicates = append(m.predicates, ps...)
@@ -736,49 +852,85 @@ func (m *DayMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DayMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.services != nil {
+		edges = append(edges, day.EdgeServices)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *DayMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case day.EdgeServices:
+		ids := make([]ent.Value, 0, len(m.services))
+		for id := range m.services {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DayMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedservices != nil {
+		edges = append(edges, day.EdgeServices)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *DayMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case day.EdgeServices:
+		ids := make([]ent.Value, 0, len(m.removedservices))
+		for id := range m.removedservices {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DayMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedservices {
+		edges = append(edges, day.EdgeServices)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *DayMutation) EdgeCleared(name string) bool {
+	switch name {
+	case day.EdgeServices:
+		return m.clearedservices
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *DayMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Day unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *DayMutation) ResetEdge(name string) error {
+	switch name {
+	case day.EdgeServices:
+		m.ResetServices()
+		return nil
+	}
 	return fmt.Errorf("unknown Day edge %s", name)
 }
 
@@ -1248,15 +1400,22 @@ func (m *PlatformMutation) ResetEdge(name string) error {
 // ServiceMutation represents an operation that mutates the Service nodes in the graph.
 type ServiceMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	uid           *string
-	headcode      *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Service, error)
-	predicates    []predicate.Service
+	op                    Op
+	typ                   string
+	id                    *int
+	uid                   *string
+	headcode              *string
+	clearedFields         map[string]struct{}
+	toc                   *int
+	clearedtoc            bool
+	day                   *int
+	clearedday            bool
+	calling_points        map[int]struct{}
+	removedcalling_points map[int]struct{}
+	clearedcalling_points bool
+	done                  bool
+	oldValue              func(context.Context) (*Service, error)
+	predicates            []predicate.Service
 }
 
 var _ ent.Mutation = (*ServiceMutation)(nil)
@@ -1429,6 +1588,138 @@ func (m *ServiceMutation) ResetHeadcode() {
 	m.headcode = nil
 }
 
+// SetTocID sets the "toc" edge to the TOC entity by id.
+func (m *ServiceMutation) SetTocID(id int) {
+	m.toc = &id
+}
+
+// ClearToc clears the "toc" edge to the TOC entity.
+func (m *ServiceMutation) ClearToc() {
+	m.clearedtoc = true
+}
+
+// TocCleared reports if the "toc" edge to the TOC entity was cleared.
+func (m *ServiceMutation) TocCleared() bool {
+	return m.clearedtoc
+}
+
+// TocID returns the "toc" edge ID in the mutation.
+func (m *ServiceMutation) TocID() (id int, exists bool) {
+	if m.toc != nil {
+		return *m.toc, true
+	}
+	return
+}
+
+// TocIDs returns the "toc" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TocID instead. It exists only for internal usage by the builders.
+func (m *ServiceMutation) TocIDs() (ids []int) {
+	if id := m.toc; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetToc resets all changes to the "toc" edge.
+func (m *ServiceMutation) ResetToc() {
+	m.toc = nil
+	m.clearedtoc = false
+}
+
+// SetDayID sets the "day" edge to the Day entity by id.
+func (m *ServiceMutation) SetDayID(id int) {
+	m.day = &id
+}
+
+// ClearDay clears the "day" edge to the Day entity.
+func (m *ServiceMutation) ClearDay() {
+	m.clearedday = true
+}
+
+// DayCleared reports if the "day" edge to the Day entity was cleared.
+func (m *ServiceMutation) DayCleared() bool {
+	return m.clearedday
+}
+
+// DayID returns the "day" edge ID in the mutation.
+func (m *ServiceMutation) DayID() (id int, exists bool) {
+	if m.day != nil {
+		return *m.day, true
+	}
+	return
+}
+
+// DayIDs returns the "day" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DayID instead. It exists only for internal usage by the builders.
+func (m *ServiceMutation) DayIDs() (ids []int) {
+	if id := m.day; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDay resets all changes to the "day" edge.
+func (m *ServiceMutation) ResetDay() {
+	m.day = nil
+	m.clearedday = false
+}
+
+// AddCallingPointIDs adds the "calling_points" edge to the CallingPoint entity by ids.
+func (m *ServiceMutation) AddCallingPointIDs(ids ...int) {
+	if m.calling_points == nil {
+		m.calling_points = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.calling_points[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCallingPoints clears the "calling_points" edge to the CallingPoint entity.
+func (m *ServiceMutation) ClearCallingPoints() {
+	m.clearedcalling_points = true
+}
+
+// CallingPointsCleared reports if the "calling_points" edge to the CallingPoint entity was cleared.
+func (m *ServiceMutation) CallingPointsCleared() bool {
+	return m.clearedcalling_points
+}
+
+// RemoveCallingPointIDs removes the "calling_points" edge to the CallingPoint entity by IDs.
+func (m *ServiceMutation) RemoveCallingPointIDs(ids ...int) {
+	if m.removedcalling_points == nil {
+		m.removedcalling_points = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.calling_points, ids[i])
+		m.removedcalling_points[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCallingPoints returns the removed IDs of the "calling_points" edge to the CallingPoint entity.
+func (m *ServiceMutation) RemovedCallingPointsIDs() (ids []int) {
+	for id := range m.removedcalling_points {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CallingPointsIDs returns the "calling_points" edge IDs in the mutation.
+func (m *ServiceMutation) CallingPointsIDs() (ids []int) {
+	for id := range m.calling_points {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCallingPoints resets all changes to the "calling_points" edge.
+func (m *ServiceMutation) ResetCallingPoints() {
+	m.calling_points = nil
+	m.clearedcalling_points = false
+	m.removedcalling_points = nil
+}
+
 // Where appends a list predicates to the ServiceMutation builder.
 func (m *ServiceMutation) Where(ps ...predicate.Service) {
 	m.predicates = append(m.predicates, ps...)
@@ -1564,49 +1855,121 @@ func (m *ServiceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ServiceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.toc != nil {
+		edges = append(edges, service.EdgeToc)
+	}
+	if m.day != nil {
+		edges = append(edges, service.EdgeDay)
+	}
+	if m.calling_points != nil {
+		edges = append(edges, service.EdgeCallingPoints)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ServiceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case service.EdgeToc:
+		if id := m.toc; id != nil {
+			return []ent.Value{*id}
+		}
+	case service.EdgeDay:
+		if id := m.day; id != nil {
+			return []ent.Value{*id}
+		}
+	case service.EdgeCallingPoints:
+		ids := make([]ent.Value, 0, len(m.calling_points))
+		for id := range m.calling_points {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ServiceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.removedcalling_points != nil {
+		edges = append(edges, service.EdgeCallingPoints)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ServiceMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case service.EdgeCallingPoints:
+		ids := make([]ent.Value, 0, len(m.removedcalling_points))
+		for id := range m.removedcalling_points {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ServiceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.clearedtoc {
+		edges = append(edges, service.EdgeToc)
+	}
+	if m.clearedday {
+		edges = append(edges, service.EdgeDay)
+	}
+	if m.clearedcalling_points {
+		edges = append(edges, service.EdgeCallingPoints)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ServiceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case service.EdgeToc:
+		return m.clearedtoc
+	case service.EdgeDay:
+		return m.clearedday
+	case service.EdgeCallingPoints:
+		return m.clearedcalling_points
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ServiceMutation) ClearEdge(name string) error {
+	switch name {
+	case service.EdgeToc:
+		m.ClearToc()
+		return nil
+	case service.EdgeDay:
+		m.ClearDay()
+		return nil
+	}
 	return fmt.Errorf("unknown Service unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ServiceMutation) ResetEdge(name string) error {
+	switch name {
+	case service.EdgeToc:
+		m.ResetToc()
+		return nil
+	case service.EdgeDay:
+		m.ResetDay()
+		return nil
+	case service.EdgeCallingPoints:
+		m.ResetCallingPoints()
+		return nil
+	}
 	return fmt.Errorf("unknown Service edge %s", name)
 }
 
@@ -2071,14 +2434,17 @@ func (m *StationMutation) ResetEdge(name string) error {
 // TOCMutation represents an operation that mutates the TOC nodes in the graph.
 type TOCMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*TOC, error)
-	predicates    []predicate.TOC
+	op              Op
+	typ             string
+	id              *int
+	name            *string
+	clearedFields   map[string]struct{}
+	services        map[int]struct{}
+	removedservices map[int]struct{}
+	clearedservices bool
+	done            bool
+	oldValue        func(context.Context) (*TOC, error)
+	predicates      []predicate.TOC
 }
 
 var _ ent.Mutation = (*TOCMutation)(nil)
@@ -2215,6 +2581,60 @@ func (m *TOCMutation) ResetName() {
 	m.name = nil
 }
 
+// AddServiceIDs adds the "services" edge to the Service entity by ids.
+func (m *TOCMutation) AddServiceIDs(ids ...int) {
+	if m.services == nil {
+		m.services = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.services[ids[i]] = struct{}{}
+	}
+}
+
+// ClearServices clears the "services" edge to the Service entity.
+func (m *TOCMutation) ClearServices() {
+	m.clearedservices = true
+}
+
+// ServicesCleared reports if the "services" edge to the Service entity was cleared.
+func (m *TOCMutation) ServicesCleared() bool {
+	return m.clearedservices
+}
+
+// RemoveServiceIDs removes the "services" edge to the Service entity by IDs.
+func (m *TOCMutation) RemoveServiceIDs(ids ...int) {
+	if m.removedservices == nil {
+		m.removedservices = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.services, ids[i])
+		m.removedservices[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedServices returns the removed IDs of the "services" edge to the Service entity.
+func (m *TOCMutation) RemovedServicesIDs() (ids []int) {
+	for id := range m.removedservices {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ServicesIDs returns the "services" edge IDs in the mutation.
+func (m *TOCMutation) ServicesIDs() (ids []int) {
+	for id := range m.services {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetServices resets all changes to the "services" edge.
+func (m *TOCMutation) ResetServices() {
+	m.services = nil
+	m.clearedservices = false
+	m.removedservices = nil
+}
+
 // Where appends a list predicates to the TOCMutation builder.
 func (m *TOCMutation) Where(ps ...predicate.TOC) {
 	m.predicates = append(m.predicates, ps...)
@@ -2333,48 +2753,84 @@ func (m *TOCMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TOCMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.services != nil {
+		edges = append(edges, toc.EdgeServices)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *TOCMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case toc.EdgeServices:
+		ids := make([]ent.Value, 0, len(m.services))
+		for id := range m.services {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TOCMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedservices != nil {
+		edges = append(edges, toc.EdgeServices)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *TOCMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case toc.EdgeServices:
+		ids := make([]ent.Value, 0, len(m.removedservices))
+		for id := range m.removedservices {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TOCMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedservices {
+		edges = append(edges, toc.EdgeServices)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *TOCMutation) EdgeCleared(name string) bool {
+	switch name {
+	case toc.EdgeServices:
+		return m.clearedservices
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *TOCMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown TOC unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *TOCMutation) ResetEdge(name string) error {
+	switch name {
+	case toc.EdgeServices:
+		m.ResetServices()
+		return nil
+	}
 	return fmt.Errorf("unknown TOC edge %s", name)
 }

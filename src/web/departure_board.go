@@ -133,6 +133,13 @@ func departureBoardDataCallingPoints(ctx context.Context, client *entities.Clien
 func departureBoardDataServices(ctx context.Context, client *entities.Client) (services []*entities.Service, err error) {
 	services, err = client.Service.
 		Query().
+		WithToc().
+		WithDay().
+		WithCallingPoints(func(cpq *entities.CallingPointQuery) {
+			cpq.WithPlatform(func(pq *entities.PlatformQuery) {
+				pq.WithStation()
+			})
+		}).
 		All(ctx)
 
 	if err != nil {

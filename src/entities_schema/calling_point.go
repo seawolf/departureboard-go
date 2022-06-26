@@ -29,5 +29,9 @@ func (CallingPoint) Edges() []ent.Edge {
 		edge.From("platform", Platform.Type).
 			Ref("calling_points").
 			Unique(),
+
+		edge.From("service", Service.Type).
+			Ref("calling_points").
+			Unique(),
 	}
 }

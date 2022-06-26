@@ -14,6 +14,7 @@ var (
 		{Name: "arrival_time", Type: field.TypeTime},
 		{Name: "departure_time", Type: field.TypeTime},
 		{Name: "platform_calling_points", Type: field.TypeInt, Nullable: true},
+		{Name: "service_calling_points", Type: field.TypeInt, Nullable: true},
 	}
 	// CallingPointsTable holds the schema information for the "calling_points" table.
 	CallingPointsTable = &schema.Table{
@@ -25,6 +26,12 @@ var (
 				Symbol:     "calling_points_platforms_calling_points",
 				Columns:    []*schema.Column{CallingPointsColumns[3]},
 				RefColumns: []*schema.Column{PlatformsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "calling_points_services_calling_points",
+				Columns:    []*schema.Column{CallingPointsColumns[4]},
+				RefColumns: []*schema.Column{ServicesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -63,14 +70,30 @@ var (
 	// ServicesColumns holds the columns for the "services" table.
 	ServicesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "uid", Type: field.TypeString, Default: "<00000>"},
+		{Name: "uid", Type: field.TypeString, Default: "00000"},
 		{Name: "headcode", Type: field.TypeString, Default: "0Z00"},
+		{Name: "day_services", Type: field.TypeInt, Nullable: true},
+		{Name: "toc_services", Type: field.TypeInt, Nullable: true},
 	}
 	// ServicesTable holds the schema information for the "services" table.
 	ServicesTable = &schema.Table{
 		Name:       "services",
 		Columns:    ServicesColumns,
 		PrimaryKey: []*schema.Column{ServicesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "services_days_services",
+				Columns:    []*schema.Column{ServicesColumns[3]},
+				RefColumns: []*schema.Column{DaysColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "services_to_cs_services",
+				Columns:    []*schema.Column{ServicesColumns[4]},
+				RefColumns: []*schema.Column{ToCsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// StationsColumns holds the columns for the "stations" table.
 	StationsColumns = []*schema.Column{
@@ -108,5 +131,8 @@ var (
 
 func init() {
 	CallingPointsTable.ForeignKeys[0].RefTable = PlatformsTable
+	CallingPointsTable.ForeignKeys[1].RefTable = ServicesTable
 	PlatformsTable.ForeignKeys[0].RefTable = StationsTable
+	ServicesTable.ForeignKeys[0].RefTable = DaysTable
+	ServicesTable.ForeignKeys[1].RefTable = ToCsTable
 }

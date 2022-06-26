@@ -9,6 +9,7 @@ import (
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -25,15 +26,18 @@ type CallingPoint struct {
 	// The values are being populated by the CallingPointQuery when eager-loading is set.
 	Edges                   CallingPointEdges `json:"edges"`
 	platform_calling_points *int
+	service_calling_points  *int
 }
 
 // CallingPointEdges holds the relations/edges for other nodes in the graph.
 type CallingPointEdges struct {
 	// Platform holds the value of the platform edge.
 	Platform *Platform `json:"platform,omitempty"`
+	// Service holds the value of the service edge.
+	Service *Service `json:"service,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // PlatformOrErr returns the Platform value or an error if the edge
@@ -50,6 +54,20 @@ func (e CallingPointEdges) PlatformOrErr() (*Platform, error) {
 	return nil, &NotLoadedError{edge: "platform"}
 }
 
+// ServiceOrErr returns the Service value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CallingPointEdges) ServiceOrErr() (*Service, error) {
+	if e.loadedTypes[1] {
+		if e.Service == nil {
+			// The edge service was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: service.Label}
+		}
+		return e.Service, nil
+	}
+	return nil, &NotLoadedError{edge: "service"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*CallingPoint) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
@@ -60,6 +78,8 @@ func (*CallingPoint) scanValues(columns []string) ([]interface{}, error) {
 		case callingpoint.FieldArrivalTime, callingpoint.FieldDepartureTime:
 			values[i] = new(sql.NullTime)
 		case callingpoint.ForeignKeys[0]: // platform_calling_points
+			values[i] = new(sql.NullInt64)
+		case callingpoint.ForeignKeys[1]: // service_calling_points
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type CallingPoint", columns[i])
@@ -101,6 +121,13 @@ func (cp *CallingPoint) assignValues(columns []string, values []interface{}) err
 				cp.platform_calling_points = new(int)
 				*cp.platform_calling_points = int(value.Int64)
 			}
+		case callingpoint.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field service_calling_points", value)
+			} else if value.Valid {
+				cp.service_calling_points = new(int)
+				*cp.service_calling_points = int(value.Int64)
+			}
 		}
 	}
 	return nil
@@ -109,6 +136,11 @@ func (cp *CallingPoint) assignValues(columns []string, values []interface{}) err
 // QueryPlatform queries the "platform" edge of the CallingPoint entity.
 func (cp *CallingPoint) QueryPlatform() *PlatformQuery {
 	return (&CallingPointClient{config: cp.config}).QueryPlatform(cp)
+}
+
+// QueryService queries the "service" edge of the CallingPoint entity.
+func (cp *CallingPoint) QueryService() *ServiceQuery {
+	return (&CallingPointClient{config: cp.config}).QueryService(cp)
 }
 
 // Update returns a builder for updating this CallingPoint.

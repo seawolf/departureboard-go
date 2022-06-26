@@ -4,12 +4,16 @@ package entities
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -24,6 +28,11 @@ type ServiceQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Service
+	// eager-loading edges.
+	withToc           *TOCQuery
+	withDay           *DayQuery
+	withCallingPoints *CallingPointQuery
+	withFKs           bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +67,72 @@ func (sq *ServiceQuery) Unique(unique bool) *ServiceQuery {
 func (sq *ServiceQuery) Order(o ...OrderFunc) *ServiceQuery {
 	sq.order = append(sq.order, o...)
 	return sq
+}
+
+// QueryToc chains the current query on the "toc" edge.
+func (sq *ServiceQuery) QueryToc() *TOCQuery {
+	query := &TOCQuery{config: sq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, selector),
+			sqlgraph.To(toc.Table, toc.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, service.TocTable, service.TocColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDay chains the current query on the "day" edge.
+func (sq *ServiceQuery) QueryDay() *DayQuery {
+	query := &DayQuery{config: sq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, selector),
+			sqlgraph.To(day.Table, day.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, service.DayTable, service.DayColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCallingPoints chains the current query on the "calling_points" edge.
+func (sq *ServiceQuery) QueryCallingPoints() *CallingPointQuery {
+	query := &CallingPointQuery{config: sq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, selector),
+			sqlgraph.To(callingpoint.Table, callingpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, service.CallingPointsTable, service.CallingPointsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Service entity from the query.
@@ -236,16 +311,52 @@ func (sq *ServiceQuery) Clone() *ServiceQuery {
 		return nil
 	}
 	return &ServiceQuery{
-		config:     sq.config,
-		limit:      sq.limit,
-		offset:     sq.offset,
-		order:      append([]OrderFunc{}, sq.order...),
-		predicates: append([]predicate.Service{}, sq.predicates...),
+		config:            sq.config,
+		limit:             sq.limit,
+		offset:            sq.offset,
+		order:             append([]OrderFunc{}, sq.order...),
+		predicates:        append([]predicate.Service{}, sq.predicates...),
+		withToc:           sq.withToc.Clone(),
+		withDay:           sq.withDay.Clone(),
+		withCallingPoints: sq.withCallingPoints.Clone(),
 		// clone intermediate query.
 		sql:    sq.sql.Clone(),
 		path:   sq.path,
 		unique: sq.unique,
 	}
+}
+
+// WithToc tells the query-builder to eager-load the nodes that are connected to
+// the "toc" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *ServiceQuery) WithToc(opts ...func(*TOCQuery)) *ServiceQuery {
+	query := &TOCQuery{config: sq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withToc = query
+	return sq
+}
+
+// WithDay tells the query-builder to eager-load the nodes that are connected to
+// the "day" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *ServiceQuery) WithDay(opts ...func(*DayQuery)) *ServiceQuery {
+	query := &DayQuery{config: sq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withDay = query
+	return sq
+}
+
+// WithCallingPoints tells the query-builder to eager-load the nodes that are connected to
+// the "calling_points" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *ServiceQuery) WithCallingPoints(opts ...func(*CallingPointQuery)) *ServiceQuery {
+	query := &CallingPointQuery{config: sq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withCallingPoints = query
+	return sq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,9 +422,21 @@ func (sq *ServiceQuery) prepareQuery(ctx context.Context) error {
 
 func (sq *ServiceQuery) sqlAll(ctx context.Context) ([]*Service, error) {
 	var (
-		nodes = []*Service{}
-		_spec = sq.querySpec()
+		nodes       = []*Service{}
+		withFKs     = sq.withFKs
+		_spec       = sq.querySpec()
+		loadedTypes = [3]bool{
+			sq.withToc != nil,
+			sq.withDay != nil,
+			sq.withCallingPoints != nil,
+		}
 	)
+	if sq.withToc != nil || sq.withDay != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, service.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Service{config: sq.config}
 		nodes = append(nodes, node)
@@ -324,6 +447,7 @@ func (sq *ServiceQuery) sqlAll(ctx context.Context) ([]*Service, error) {
 			return fmt.Errorf("entities: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, sq.driver, _spec); err != nil {
@@ -332,6 +456,94 @@ func (sq *ServiceQuery) sqlAll(ctx context.Context) ([]*Service, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := sq.withToc; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Service)
+		for i := range nodes {
+			if nodes[i].toc_services == nil {
+				continue
+			}
+			fk := *nodes[i].toc_services
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(toc.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "toc_services" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Toc = n
+			}
+		}
+	}
+
+	if query := sq.withDay; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Service)
+		for i := range nodes {
+			if nodes[i].day_services == nil {
+				continue
+			}
+			fk := *nodes[i].day_services
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(day.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "day_services" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Day = n
+			}
+		}
+	}
+
+	if query := sq.withCallingPoints; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Service)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.CallingPoints = []*CallingPoint{}
+		}
+		query.withFKs = true
+		query.Where(predicate.CallingPoint(func(s *sql.Selector) {
+			s.Where(sql.InValues(service.CallingPointsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.service_calling_points
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "service_calling_points" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "service_calling_points" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.CallingPoints = append(node.Edges.CallingPoints, n)
+		}
+	}
+
 	return nodes, nil
 }
 

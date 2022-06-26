@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -42,9 +43,45 @@ func (du *DayUpdate) SetNillableDate(t *time.Time) *DayUpdate {
 	return du
 }
 
+// AddServiceIDs adds the "services" edge to the Service entity by IDs.
+func (du *DayUpdate) AddServiceIDs(ids ...int) *DayUpdate {
+	du.mutation.AddServiceIDs(ids...)
+	return du
+}
+
+// AddServices adds the "services" edges to the Service entity.
+func (du *DayUpdate) AddServices(s ...*Service) *DayUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return du.AddServiceIDs(ids...)
+}
+
 // Mutation returns the DayMutation object of the builder.
 func (du *DayUpdate) Mutation() *DayMutation {
 	return du.mutation
+}
+
+// ClearServices clears all "services" edges to the Service entity.
+func (du *DayUpdate) ClearServices() *DayUpdate {
+	du.mutation.ClearServices()
+	return du
+}
+
+// RemoveServiceIDs removes the "services" edge to Service entities by IDs.
+func (du *DayUpdate) RemoveServiceIDs(ids ...int) *DayUpdate {
+	du.mutation.RemoveServiceIDs(ids...)
+	return du
+}
+
+// RemoveServices removes "services" edges to Service entities.
+func (du *DayUpdate) RemoveServices(s ...*Service) *DayUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return du.RemoveServiceIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -126,6 +163,60 @@ func (du *DayUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: day.FieldDate,
 		})
 	}
+	if du.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   day.ServicesTable,
+			Columns: []string{day.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedServicesIDs(); len(nodes) > 0 && !du.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   day.ServicesTable,
+			Columns: []string{day.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.ServicesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   day.ServicesTable,
+			Columns: []string{day.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, du.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{day.Label}
@@ -159,9 +250,45 @@ func (duo *DayUpdateOne) SetNillableDate(t *time.Time) *DayUpdateOne {
 	return duo
 }
 
+// AddServiceIDs adds the "services" edge to the Service entity by IDs.
+func (duo *DayUpdateOne) AddServiceIDs(ids ...int) *DayUpdateOne {
+	duo.mutation.AddServiceIDs(ids...)
+	return duo
+}
+
+// AddServices adds the "services" edges to the Service entity.
+func (duo *DayUpdateOne) AddServices(s ...*Service) *DayUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return duo.AddServiceIDs(ids...)
+}
+
 // Mutation returns the DayMutation object of the builder.
 func (duo *DayUpdateOne) Mutation() *DayMutation {
 	return duo.mutation
+}
+
+// ClearServices clears all "services" edges to the Service entity.
+func (duo *DayUpdateOne) ClearServices() *DayUpdateOne {
+	duo.mutation.ClearServices()
+	return duo
+}
+
+// RemoveServiceIDs removes the "services" edge to Service entities by IDs.
+func (duo *DayUpdateOne) RemoveServiceIDs(ids ...int) *DayUpdateOne {
+	duo.mutation.RemoveServiceIDs(ids...)
+	return duo
+}
+
+// RemoveServices removes "services" edges to Service entities.
+func (duo *DayUpdateOne) RemoveServices(s ...*Service) *DayUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return duo.RemoveServiceIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -266,6 +393,60 @@ func (duo *DayUpdateOne) sqlSave(ctx context.Context) (_node *Day, err error) {
 			Value:  value,
 			Column: day.FieldDate,
 		})
+	}
+	if duo.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   day.ServicesTable,
+			Columns: []string{day.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedServicesIDs(); len(nodes) > 0 && !duo.mutation.ServicesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   day.ServicesTable,
+			Columns: []string{day.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.ServicesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   day.ServicesTable,
+			Columns: []string{day.ServicesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Day{config: duo.config}
 	_spec.Assign = _node.assignValues

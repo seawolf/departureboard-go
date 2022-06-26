@@ -7,8 +7,11 @@ import (
 	"time"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/station"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
 )
 
 func Prepare(ctx context.Context, client *entities.Client) {
@@ -30,6 +33,11 @@ func Prepare(ctx context.Context, client *entities.Client) {
 	count, _ = countDays(ctx, client)
 	if count == 0 {
 		createDays(ctx, client)
+	}
+
+	count, _ = countServices(ctx, client)
+	if count == 0 {
+		createServices(ctx, client)
 	}
 
 	count, _ = countCallingPoints(ctx, client)
@@ -243,16 +251,13 @@ func countDays(ctx context.Context, client *entities.Client) (daysCount int, err
 func createDays(ctx context.Context, client *entities.Client) {
 	count := 0
 
-	for _, numberOfDays := range []int{6, 5, 4, 3, 2, 1, 0} {
+	tz, _ := time.LoadLocation("Europe/London")
+	for _, date := range []int{27, 28, 29, 30} {
 
-		now := time.Now()
-		startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-
-		newDay := startOfToday.AddDate(0, 0, -numberOfDays)
-
+		day := time.Date(2022, 6, date, 0, 0, 0, 0, tz)
 		client.Day.
 			Create().
-			SetDate(newDay).
+			SetDate(day).
 			SaveX(ctx)
 		count++
 	}
@@ -260,8 +265,62 @@ func createDays(ctx context.Context, client *entities.Client) {
 	log.Println("Days created:", count)
 }
 
-func countCallingPoints(ctx context.Context, client *entities.Client) (platformsCount int, err error) {
-	platformsCount, err = client.CallingPoint.
+func countServices(ctx context.Context, client *entities.Client) (servicesCount int, err error) {
+	servicesCount, err = client.Service.
+		Query().
+		Count(ctx)
+
+	if err != nil {
+		return -1, fmt.Errorf("failed counting Services: %w", err)
+	}
+
+	log.Println("Services found:", servicesCount)
+	return
+}
+
+func createServices(ctx context.Context, client *entities.Client) {
+	count := 0
+
+	days, _ := client.Day.
+		Query().
+		Order(entities.Desc("id")).
+		All(ctx)
+
+	TOC_SWR, _ := client.TOC.
+		Query().
+		Where(toc.Name("South Western Railway")).
+		First(ctx)
+
+	// TOC_Southern, _ := client.TOC.
+	// 	Query().
+	// 	Where(toc.Name("Southern")).
+	// 	First(ctx)
+
+	for _, day := range days {
+		client.Service.
+			Create().
+			SetToc(TOC_SWR).
+			SetDay(day).
+			SetUID("Y66876").
+			SetHeadcode("1P24").
+			SaveX(ctx)
+		count++
+
+		client.Service.
+			Create().
+			SetToc(TOC_SWR).
+			SetDay(day).
+			SetUID("Y70395").
+			SetHeadcode("2P98").
+			SaveX(ctx)
+		count++
+	}
+
+	log.Println("Services created:", count)
+}
+
+func countCallingPoints(ctx context.Context, client *entities.Client) (callingPointsCount int, err error) {
+	callingPointsCount, err = client.CallingPoint.
 		Query().
 		Count(ctx)
 
@@ -269,7 +328,7 @@ func countCallingPoints(ctx context.Context, client *entities.Client) (platforms
 		return -1, fmt.Errorf("failed counting CallingPoints: %w", err)
 	}
 
-	log.Println("CallingPoints found:", platformsCount)
+	log.Println("CallingPoints found:", callingPointsCount)
 	return
 }
 
@@ -323,79 +382,103 @@ func createCallingPoints(ctx context.Context, client *entities.Client) {
 		Where(platform.Name("1")).
 		First(ctx)
 
-	// 1P24
-	client.CallingPoint.
-		Create().
-		SetPlatform(PMH_4).
-		SetArrivalTime(time.Time{}).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 15)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(PMS_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 18)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 20)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(FTN_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 23)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 24)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(HAV_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 32)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 34)).
-		SaveX(ctx)
-	count++
+	for _, serviceDay := range days {
+		var svc *entities.Service
 
-	// 2P98
-	client.CallingPoint.
-		Create().
-		SetPlatform(PMH_3).
-		SetArrivalTime(time.Time{}).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 19)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(PMS_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 22)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 24)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(FTN_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 27)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 28)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(HLS_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 32)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 32)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(BDH_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 37)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 37)).
-		SaveX(ctx)
-	count++
-	client.CallingPoint.
-		Create().
-		SetPlatform(HAV_1).
-		SetArrivalTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 39)).
-		SetDepartureTime(days[0].Date.Add(time.Hour * 8).Add(time.Minute * 40)).
-		SaveX(ctx)
-	count++
+		// 1P24
+		svc = client.Service.
+			Query().
+			Where(service.UID("Y66876")).
+			Where(service.HasDayWith(day.Date(serviceDay.Date))).
+			OnlyX(ctx)
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(PMH_4).
+			SetArrivalTime(time.Time{}).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 15)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(PMS_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 18)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 20)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(FTN_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 23)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 24)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(HAV_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 32)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 34)).
+			SaveX(ctx)
+		count++
+
+		// 2P98
+		svc = client.Service.
+			Query().
+			Where(service.UID("Y70395")).
+			Where(service.HasDayWith(day.Date(serviceDay.Date))).
+			OnlyX(ctx)
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(PMH_3).
+			SetArrivalTime(time.Time{}).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 19)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(PMS_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 22)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 24)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(FTN_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 27)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 28)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(HLS_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 32)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 32)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(BDH_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 37)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 37)).
+			SaveX(ctx)
+		count++
+		client.CallingPoint.
+			Create().
+			SetService(svc).
+			SetPlatform(HAV_1).
+			SetArrivalTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 39)).
+			SetDepartureTime(serviceDay.Date.Add(time.Hour * 8).Add(time.Minute * 40)).
+			SaveX(ctx)
+		count++
+	}
 
 	log.Println("CallingPoints created:", count)
 }
