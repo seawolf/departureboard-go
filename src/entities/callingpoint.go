@@ -5,6 +5,7 @@ package entities
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"entgo.io/ent/dialect/sql"
@@ -12,9 +13,13 @@ import (
 
 // CallingPoint is the model entity for the CallingPoint schema.
 type CallingPoint struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// ArrivalTime holds the value of the "arrival_time" field.
+	ArrivalTime time.Time `json:"arrival_time,omitempty"`
+	// DepartureTime holds the value of the "departure_time" field.
+	DepartureTime time.Time `json:"departure_time,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -24,6 +29,8 @@ func (*CallingPoint) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case callingpoint.FieldID:
 			values[i] = new(sql.NullInt64)
+		case callingpoint.FieldArrivalTime, callingpoint.FieldDepartureTime:
+			values[i] = new(sql.NullTime)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type CallingPoint", columns[i])
 		}
@@ -45,6 +52,18 @@ func (cp *CallingPoint) assignValues(columns []string, values []interface{}) err
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			cp.ID = int(value.Int64)
+		case callingpoint.FieldArrivalTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field arrival_time", values[i])
+			} else if value.Valid {
+				cp.ArrivalTime = value.Time
+			}
+		case callingpoint.FieldDepartureTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field departure_time", values[i])
+			} else if value.Valid {
+				cp.DepartureTime = value.Time
+			}
 		}
 	}
 	return nil
@@ -73,6 +92,10 @@ func (cp *CallingPoint) String() string {
 	var builder strings.Builder
 	builder.WriteString("CallingPoint(")
 	builder.WriteString(fmt.Sprintf("id=%v", cp.ID))
+	builder.WriteString(", arrival_time=")
+	builder.WriteString(cp.ArrivalTime.Format(time.ANSIC))
+	builder.WriteString(", departure_time=")
+	builder.WriteString(cp.DepartureTime.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

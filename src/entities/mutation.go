@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
@@ -39,13 +40,15 @@ const (
 // CallingPointMutation represents an operation that mutates the CallingPoint nodes in the graph.
 type CallingPointMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*CallingPoint, error)
-	predicates    []predicate.CallingPoint
+	op             Op
+	typ            string
+	id             *int
+	arrival_time   *time.Time
+	departure_time *time.Time
+	clearedFields  map[string]struct{}
+	done           bool
+	oldValue       func(context.Context) (*CallingPoint, error)
+	predicates     []predicate.CallingPoint
 }
 
 var _ ent.Mutation = (*CallingPointMutation)(nil)
@@ -146,6 +149,78 @@ func (m *CallingPointMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
+// SetArrivalTime sets the "arrival_time" field.
+func (m *CallingPointMutation) SetArrivalTime(t time.Time) {
+	m.arrival_time = &t
+}
+
+// ArrivalTime returns the value of the "arrival_time" field in the mutation.
+func (m *CallingPointMutation) ArrivalTime() (r time.Time, exists bool) {
+	v := m.arrival_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArrivalTime returns the old "arrival_time" field's value of the CallingPoint entity.
+// If the CallingPoint object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CallingPointMutation) OldArrivalTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArrivalTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArrivalTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArrivalTime: %w", err)
+	}
+	return oldValue.ArrivalTime, nil
+}
+
+// ResetArrivalTime resets all changes to the "arrival_time" field.
+func (m *CallingPointMutation) ResetArrivalTime() {
+	m.arrival_time = nil
+}
+
+// SetDepartureTime sets the "departure_time" field.
+func (m *CallingPointMutation) SetDepartureTime(t time.Time) {
+	m.departure_time = &t
+}
+
+// DepartureTime returns the value of the "departure_time" field in the mutation.
+func (m *CallingPointMutation) DepartureTime() (r time.Time, exists bool) {
+	v := m.departure_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDepartureTime returns the old "departure_time" field's value of the CallingPoint entity.
+// If the CallingPoint object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CallingPointMutation) OldDepartureTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDepartureTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDepartureTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDepartureTime: %w", err)
+	}
+	return oldValue.DepartureTime, nil
+}
+
+// ResetDepartureTime resets all changes to the "departure_time" field.
+func (m *CallingPointMutation) ResetDepartureTime() {
+	m.departure_time = nil
+}
+
 // Where appends a list predicates to the CallingPointMutation builder.
 func (m *CallingPointMutation) Where(ps ...predicate.CallingPoint) {
 	m.predicates = append(m.predicates, ps...)
@@ -165,7 +240,13 @@ func (m *CallingPointMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CallingPointMutation) Fields() []string {
-	fields := make([]string, 0, 0)
+	fields := make([]string, 0, 2)
+	if m.arrival_time != nil {
+		fields = append(fields, callingpoint.FieldArrivalTime)
+	}
+	if m.departure_time != nil {
+		fields = append(fields, callingpoint.FieldDepartureTime)
+	}
 	return fields
 }
 
@@ -173,6 +254,12 @@ func (m *CallingPointMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *CallingPointMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case callingpoint.FieldArrivalTime:
+		return m.ArrivalTime()
+	case callingpoint.FieldDepartureTime:
+		return m.DepartureTime()
+	}
 	return nil, false
 }
 
@@ -180,6 +267,12 @@ func (m *CallingPointMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *CallingPointMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case callingpoint.FieldArrivalTime:
+		return m.OldArrivalTime(ctx)
+	case callingpoint.FieldDepartureTime:
+		return m.OldDepartureTime(ctx)
+	}
 	return nil, fmt.Errorf("unknown CallingPoint field %s", name)
 }
 
@@ -188,6 +281,20 @@ func (m *CallingPointMutation) OldField(ctx context.Context, name string) (ent.V
 // type.
 func (m *CallingPointMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case callingpoint.FieldArrivalTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArrivalTime(v)
+		return nil
+	case callingpoint.FieldDepartureTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDepartureTime(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CallingPoint field %s", name)
 }
@@ -209,6 +316,8 @@ func (m *CallingPointMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *CallingPointMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown CallingPoint numeric field %s", name)
 }
 
@@ -234,6 +343,14 @@ func (m *CallingPointMutation) ClearField(name string) error {
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *CallingPointMutation) ResetField(name string) error {
+	switch name {
+	case callingpoint.FieldArrivalTime:
+		m.ResetArrivalTime()
+		return nil
+	case callingpoint.FieldDepartureTime:
+		m.ResetDepartureTime()
+		return nil
+	}
 	return fmt.Errorf("unknown CallingPoint field %s", name)
 }
 

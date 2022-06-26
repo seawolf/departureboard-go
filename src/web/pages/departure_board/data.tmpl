@@ -128,6 +128,8 @@
                             <th>Service Uid</th>
                             <th>Service Headcode</th>
                             <th>Station Name (Platform Name)</th>
+                            <th>Arrival Time</th>
+                            <th>Departure Time</th>
                         </tr>
                     </thead>
 
@@ -138,6 +140,8 @@
                                 <td>{{ .Service.Uid }}</td>
                                 <td>{{ .Service.Headcode }}</td>
                                 <td>{{ .Platform.Station.Name }} ({{ .Platform.Name }})</td>
+                                <td>{{ .ArrivalTime }}</td>
+                                <td>{{ .DepartureTime }}</td>
                             </tr>
                         {{ end }}
                     </tbody>

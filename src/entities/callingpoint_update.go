@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/predicate"
@@ -24,6 +25,34 @@ type CallingPointUpdate struct {
 // Where appends a list predicates to the CallingPointUpdate builder.
 func (cpu *CallingPointUpdate) Where(ps ...predicate.CallingPoint) *CallingPointUpdate {
 	cpu.mutation.Where(ps...)
+	return cpu
+}
+
+// SetArrivalTime sets the "arrival_time" field.
+func (cpu *CallingPointUpdate) SetArrivalTime(t time.Time) *CallingPointUpdate {
+	cpu.mutation.SetArrivalTime(t)
+	return cpu
+}
+
+// SetNillableArrivalTime sets the "arrival_time" field if the given value is not nil.
+func (cpu *CallingPointUpdate) SetNillableArrivalTime(t *time.Time) *CallingPointUpdate {
+	if t != nil {
+		cpu.SetArrivalTime(*t)
+	}
+	return cpu
+}
+
+// SetDepartureTime sets the "departure_time" field.
+func (cpu *CallingPointUpdate) SetDepartureTime(t time.Time) *CallingPointUpdate {
+	cpu.mutation.SetDepartureTime(t)
+	return cpu
+}
+
+// SetNillableDepartureTime sets the "departure_time" field if the given value is not nil.
+func (cpu *CallingPointUpdate) SetNillableDepartureTime(t *time.Time) *CallingPointUpdate {
+	if t != nil {
+		cpu.SetDepartureTime(*t)
+	}
 	return cpu
 }
 
@@ -104,6 +133,20 @@ func (cpu *CallingPointUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := cpu.mutation.ArrivalTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: callingpoint.FieldArrivalTime,
+		})
+	}
+	if value, ok := cpu.mutation.DepartureTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: callingpoint.FieldDepartureTime,
+		})
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{callingpoint.Label}
@@ -121,6 +164,34 @@ type CallingPointUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *CallingPointMutation
+}
+
+// SetArrivalTime sets the "arrival_time" field.
+func (cpuo *CallingPointUpdateOne) SetArrivalTime(t time.Time) *CallingPointUpdateOne {
+	cpuo.mutation.SetArrivalTime(t)
+	return cpuo
+}
+
+// SetNillableArrivalTime sets the "arrival_time" field if the given value is not nil.
+func (cpuo *CallingPointUpdateOne) SetNillableArrivalTime(t *time.Time) *CallingPointUpdateOne {
+	if t != nil {
+		cpuo.SetArrivalTime(*t)
+	}
+	return cpuo
+}
+
+// SetDepartureTime sets the "departure_time" field.
+func (cpuo *CallingPointUpdateOne) SetDepartureTime(t time.Time) *CallingPointUpdateOne {
+	cpuo.mutation.SetDepartureTime(t)
+	return cpuo
+}
+
+// SetNillableDepartureTime sets the "departure_time" field if the given value is not nil.
+func (cpuo *CallingPointUpdateOne) SetNillableDepartureTime(t *time.Time) *CallingPointUpdateOne {
+	if t != nil {
+		cpuo.SetDepartureTime(*t)
+	}
+	return cpuo
 }
 
 // Mutation returns the CallingPointMutation object of the builder.
@@ -223,6 +294,20 @@ func (cpuo *CallingPointUpdateOne) sqlSave(ctx context.Context) (_node *CallingP
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := cpuo.mutation.ArrivalTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: callingpoint.FieldArrivalTime,
+		})
+	}
+	if value, ok := cpuo.mutation.DepartureTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: callingpoint.FieldDepartureTime,
+		})
 	}
 	_node = &CallingPoint{config: cpuo.config}
 	_spec.Assign = _node.assignValues

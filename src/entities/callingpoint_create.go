@@ -4,7 +4,9 @@ package entities
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -18,6 +20,34 @@ type CallingPointCreate struct {
 	hooks    []Hook
 }
 
+// SetArrivalTime sets the "arrival_time" field.
+func (cpc *CallingPointCreate) SetArrivalTime(t time.Time) *CallingPointCreate {
+	cpc.mutation.SetArrivalTime(t)
+	return cpc
+}
+
+// SetNillableArrivalTime sets the "arrival_time" field if the given value is not nil.
+func (cpc *CallingPointCreate) SetNillableArrivalTime(t *time.Time) *CallingPointCreate {
+	if t != nil {
+		cpc.SetArrivalTime(*t)
+	}
+	return cpc
+}
+
+// SetDepartureTime sets the "departure_time" field.
+func (cpc *CallingPointCreate) SetDepartureTime(t time.Time) *CallingPointCreate {
+	cpc.mutation.SetDepartureTime(t)
+	return cpc
+}
+
+// SetNillableDepartureTime sets the "departure_time" field if the given value is not nil.
+func (cpc *CallingPointCreate) SetNillableDepartureTime(t *time.Time) *CallingPointCreate {
+	if t != nil {
+		cpc.SetDepartureTime(*t)
+	}
+	return cpc
+}
+
 // Mutation returns the CallingPointMutation object of the builder.
 func (cpc *CallingPointCreate) Mutation() *CallingPointMutation {
 	return cpc.mutation
@@ -29,6 +59,7 @@ func (cpc *CallingPointCreate) Save(ctx context.Context) (*CallingPoint, error) 
 		err  error
 		node *CallingPoint
 	)
+	cpc.defaults()
 	if len(cpc.hooks) == 0 {
 		if err = cpc.check(); err != nil {
 			return nil, err
@@ -86,8 +117,26 @@ func (cpc *CallingPointCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (cpc *CallingPointCreate) defaults() {
+	if _, ok := cpc.mutation.ArrivalTime(); !ok {
+		v := callingpoint.DefaultArrivalTime
+		cpc.mutation.SetArrivalTime(v)
+	}
+	if _, ok := cpc.mutation.DepartureTime(); !ok {
+		v := callingpoint.DefaultDepartureTime
+		cpc.mutation.SetDepartureTime(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cpc *CallingPointCreate) check() error {
+	if _, ok := cpc.mutation.ArrivalTime(); !ok {
+		return &ValidationError{Name: "arrival_time", err: errors.New(`entities: missing required field "CallingPoint.arrival_time"`)}
+	}
+	if _, ok := cpc.mutation.DepartureTime(); !ok {
+		return &ValidationError{Name: "departure_time", err: errors.New(`entities: missing required field "CallingPoint.departure_time"`)}
+	}
 	return nil
 }
 
@@ -115,6 +164,22 @@ func (cpc *CallingPointCreate) createSpec() (*CallingPoint, *sqlgraph.CreateSpec
 			},
 		}
 	)
+	if value, ok := cpc.mutation.ArrivalTime(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: callingpoint.FieldArrivalTime,
+		})
+		_node.ArrivalTime = value
+	}
+	if value, ok := cpc.mutation.DepartureTime(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: callingpoint.FieldDepartureTime,
+		})
+		_node.DepartureTime = value
+	}
 	return _node, _spec
 }
 
@@ -132,6 +197,7 @@ func (cpcb *CallingPointCreateBulk) Save(ctx context.Context) ([]*CallingPoint, 
 	for i := range cpcb.builders {
 		func(i int, root context.Context) {
 			builder := cpcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*CallingPointMutation)
 				if !ok {

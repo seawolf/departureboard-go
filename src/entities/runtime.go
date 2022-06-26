@@ -5,6 +5,7 @@ package entities
 import (
 	"time"
 
+	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/callingpoint"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/day"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/platform"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/service"
@@ -17,6 +18,16 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	callingpointFields := entities_schema.CallingPoint{}.Fields()
+	_ = callingpointFields
+	// callingpointDescArrivalTime is the schema descriptor for arrival_time field.
+	callingpointDescArrivalTime := callingpointFields[0].Descriptor()
+	// callingpoint.DefaultArrivalTime holds the default value on creation for the arrival_time field.
+	callingpoint.DefaultArrivalTime = callingpointDescArrivalTime.Default.(time.Time)
+	// callingpointDescDepartureTime is the schema descriptor for departure_time field.
+	callingpointDescDepartureTime := callingpointFields[1].Descriptor()
+	// callingpoint.DefaultDepartureTime holds the default value on creation for the departure_time field.
+	callingpoint.DefaultDepartureTime = callingpointDescDepartureTime.Default.(time.Time)
 	dayFields := entities_schema.Day{}.Fields()
 	_ = dayFields
 	// dayDescDate is the schema descriptor for date field.

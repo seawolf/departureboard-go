@@ -11,6 +11,8 @@ var (
 	// CallingPointsColumns holds the columns for the "calling_points" table.
 	CallingPointsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "arrival_time", Type: field.TypeTime},
+		{Name: "departure_time", Type: field.TypeTime},
 	}
 	// CallingPointsTable holds the schema information for the "calling_points" table.
 	CallingPointsTable = &schema.Table{

@@ -2,11 +2,19 @@
 
 package callingpoint
 
+import (
+	"time"
+)
+
 const (
 	// Label holds the string label denoting the callingpoint type in the database.
 	Label = "calling_point"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldArrivalTime holds the string denoting the arrival_time field in the database.
+	FieldArrivalTime = "arrival_time"
+	// FieldDepartureTime holds the string denoting the departure_time field in the database.
+	FieldDepartureTime = "departure_time"
 	// Table holds the table name of the callingpoint in the database.
 	Table = "calling_points"
 )
@@ -14,6 +22,8 @@ const (
 // Columns holds all SQL columns for callingpoint fields.
 var Columns = []string{
 	FieldID,
+	FieldArrivalTime,
+	FieldDepartureTime,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -25,3 +35,10 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultArrivalTime holds the default value on creation for the "arrival_time" field.
+	DefaultArrivalTime time.Time
+	// DefaultDepartureTime holds the default value on creation for the "departure_time" field.
+	DefaultDepartureTime time.Time
+)

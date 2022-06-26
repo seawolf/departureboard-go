@@ -250,6 +250,19 @@ func (cpq *CallingPointQuery) Clone() *CallingPointQuery {
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		ArrivalTime time.Time `json:"arrival_time,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.CallingPoint.Query().
+//		GroupBy(callingpoint.FieldArrivalTime).
+//		Aggregate(entities.Count()).
+//		Scan(ctx, &v)
+//
 func (cpq *CallingPointQuery) GroupBy(field string, fields ...string) *CallingPointGroupBy {
 	group := &CallingPointGroupBy{config: cpq.config}
 	group.fields = append([]string{field}, fields...)
@@ -264,6 +277,17 @@ func (cpq *CallingPointQuery) GroupBy(field string, fields ...string) *CallingPo
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		ArrivalTime time.Time `json:"arrival_time,omitempty"`
+//	}
+//
+//	client.CallingPoint.Query().
+//		Select(callingpoint.FieldArrivalTime).
+//		Scan(ctx, &v)
+//
 func (cpq *CallingPointQuery) Select(fields ...string) *CallingPointSelect {
 	cpq.fields = append(cpq.fields, fields...)
 	return &CallingPointSelect{CallingPointQuery: cpq}
