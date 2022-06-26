@@ -92,6 +92,7 @@ func departureBoardDataStations(ctx context.Context, client *entities.Client) (s
 func departureBoardDataPlatforms(ctx context.Context, client *entities.Client) (platforms []*entities.Platform, err error) {
 	platforms, err = client.Platform.
 		Query().
+		WithStation().
 		All(ctx)
 
 	if err != nil {
