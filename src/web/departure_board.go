@@ -72,7 +72,7 @@ func departureBoardDataTOCs(ctx context.Context, client *entities.Client) (tocs 
 		return nil, fmt.Errorf("failed querying TOCs: %w", err)
 	}
 
-	log.Println("TOCs returned:", tocs)
+	log.Println("TOCs returned:", len(tocs))
 	return
 }
 
@@ -85,7 +85,7 @@ func departureBoardDataStations(ctx context.Context, client *entities.Client) (s
 		return nil, fmt.Errorf("failed querying Stations: %w", err)
 	}
 
-	log.Println("Stations returned:", stations)
+	log.Println("Stations returned:", len(stations))
 	return
 }
 
@@ -99,7 +99,7 @@ func departureBoardDataPlatforms(ctx context.Context, client *entities.Client) (
 		return nil, fmt.Errorf("failed querying Platforms: %w", err)
 	}
 
-	log.Println("Platforms returned:", platforms)
+	log.Println("Platforms returned:", len(platforms))
 	return
 }
 
@@ -112,7 +112,7 @@ func departureBoardDataDays(ctx context.Context, client *entities.Client) (days 
 		return nil, fmt.Errorf("failed querying Days: %w", err)
 	}
 
-	log.Println("Days returned:", days)
+	log.Println("Days returned:", len(days))
 	return
 }
 
@@ -126,7 +126,7 @@ func departureBoardDataCallingPoints(ctx context.Context, client *entities.Clien
 		return nil, fmt.Errorf("failed querying CallingPoints: %w", err)
 	}
 
-	log.Println("CallingPoints returned:", callingPoints)
+	log.Println("CallingPoints returned:", len(callingPoints))
 	return
 }
 
@@ -139,6 +139,6 @@ func departureBoardDataServices(ctx context.Context, client *entities.Client) (s
 		return nil, fmt.Errorf("failed querying Services: %w", err)
 	}
 
-	log.Println("Services returned:", services)
+	log.Println("Services returned:", len(services))
 	return
 }
