@@ -7,6 +7,7 @@ import (
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities/toc"
+	"bitbucket.org/sea_wolf/departure_board-go/v2/web"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -17,12 +18,9 @@ func main() {
 	client := setupDatabase(ctx)
 	defer client.Close()
 
-	count, _ := countTOCs(ctx, client)
-	if count == 0 {
-		createTOCs(ctx, client)
-	}
+	ensureDatabaseIsPopulated(ctx, client)
 
-	getTOCs(ctx, client)
+	web.StartServer(ctx, client)
 }
 
 func setupDatabase(ctx context.Context) (client *entities.Client) {
@@ -37,6 +35,15 @@ func setupDatabase(ctx context.Context) (client *entities.Client) {
 	}
 
 	return
+}
+
+func ensureDatabaseIsPopulated(ctx context.Context, client *entities.Client) {
+	count, _ := countTOCs(ctx, client)
+	if count == 0 {
+		createTOCs(ctx, client)
+	}
+
+	getTOCs(ctx, client)
 }
 
 func countTOCs(ctx context.Context, client *entities.Client) (tocCount int, err error) {
