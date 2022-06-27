@@ -1,0 +1,75 @@
+{{ template "header.tmpl" . }}
+
+<div class="row">
+    <h1>Service #{{ .Service.ID }}</h1>
+</div>
+
+<div class="row">
+    <ul class="collapsible">
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">train</i>
+                Service Information
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>TOC Name</th>
+                            <th>Uid</th>
+                            <th>Headcode</th>
+                            <th>Day</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>{{ .Service.ID }}</td>
+                            <td>{{ .Service.Edges.Toc.Name }}</td>
+                            <td>{{ .Service.UID }}</td>
+                            <td>{{ .Service.Headcode }}</td>
+                            <td>{{ .Service.Edges.Day.Date | formatAsDate }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+        <li>
+            <div class="collapsible-header">
+                <i class="material-icons">access_time</i>
+                Calling Points
+            </div>
+            <div class="collapsible-body">
+                <table class="table striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Station Name</th>
+                            <th>Platform</th>
+                            <th>Arrival Time</th>
+                            <th>Departure Time</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {{ range .Service.Edges.CallingPoints }}
+                            <tr>
+                                <td>{{ .ID }}</td>
+                                <td>{{ .Edges.Platform.Edges.Station.Name }}</td>
+                                <td>{{ .Edges.Platform.Name }}</td>
+                                <td>{{ .ArrivalTime | formatAsTime }}</td>
+                                <td>{{ .DepartureTime | formatAsTime }}</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </li>
+
+    </ul>
+</div>
+
+{{ template "footer.tmpl" . }}
