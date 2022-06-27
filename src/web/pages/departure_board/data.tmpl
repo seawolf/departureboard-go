@@ -162,6 +162,7 @@
                             <th>Headcode</th>
                             <th>Day</th>
                             <th>Calling Points</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
 
@@ -174,6 +175,12 @@
                                 <td>{{ .Headcode }}</td>
                                 <td>{{ .Edges.Day.Date | formatAsDate }}</td>
                                 <td>{{ .Edges.CallingPoints | listCallingPoints }}</td>
+                                <td>
+                                    <a class="waves-effect waves-light btn" href="/departure_board/service/{{ .ID }}">
+                                        <i class="material-icons left">pageview</i>
+                                        View
+                                    </a>
+                                </td>
                             </tr>
                         {{ end }}
                     </tbody>
