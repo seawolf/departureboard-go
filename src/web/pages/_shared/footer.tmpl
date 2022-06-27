@@ -6,7 +6,9 @@
         <script type="text/javascript">
             document.addEventListener('DOMContentLoaded', function() {
                 var elems = document.querySelectorAll('.collapsible');
-                var options = {};
+                var options = {
+                    accordion: false
+                };
                 var instances = M.Collapsible.init(elems, options);
             });
         </script>
