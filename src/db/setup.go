@@ -5,6 +5,8 @@ import (
 	"log"
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/entities"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func Connect(ctx context.Context) (client *entities.Client) {

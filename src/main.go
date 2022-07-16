@@ -5,8 +5,6 @@ import (
 
 	"bitbucket.org/sea_wolf/departure_board-go/v2/db"
 	"bitbucket.org/sea_wolf/departure_board-go/v2/web"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
